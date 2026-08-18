@@ -77,6 +77,28 @@ de `voidSuits` já eliminou para cada jogador).
 Placar é cumulativo entre rodadas dentro da sessão (não há alvo de pontos
 fixo — o usuário decide quando a partida acaba).
 
+### Bônus de Pontuação: Lá-e-Lô e Bucha
+
+Duas condições especiais de batida valem pontuação em dobro (multiplicador
+aplicado sobre os pontos base da rodada, cumulativo se as duas ocorrerem
+juntas — dobro cada, ou seja ×4 no total):
+
+- **Lá-e-lô** (lasquenete/lasquinê): a peça que bate o jogo é jogada quando
+  as duas pontas abertas já tinham o mesmo valor — ou seja, o vencedor
+  "podia bater de lá ou de lô" indiferentemente. Detectado comparando as
+  pontas da mesa imediatamente antes da jogada vencedora.
+- **Bucha** (carreto): o lado vencedor bate a partida enquanto nenhum
+  jogador do lado adversário jogou qualquer peça ainda (mão adversária
+  intacta desde a distribuição). Detectado verificando se nenhum jogador
+  adversário tem uma jogada (`play`) no histórico até aquele momento.
+
+O solver ganha duas heurísticas adicionais para favorecer essas condições
+quando forem alcançáveis sem comprometer as demais heurísticas de segurança:
+bônus ao identificar que a jogada atual É a jogada final em condição de
+lá-e-lô ou bucha, e um bônus menor e especulativo quando a jogada iguala as
+pontas e o usuário ainda guarda peça(s) naquele naipe (abrindo caminho para
+uma futura batida de lá-e-lô).
+
 ## Tipos Centrais (`engine/types.ts`)
 
 - `Suit = 0 | 1 | 2 | 3 | 4 | 5 | 6`
