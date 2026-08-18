@@ -61,36 +61,24 @@ export default function Home() {
     return <SetupWizard onComplete={(config, userHand) => dispatch({ type: "SETUP_COMPLETE", config, userHand })} />;
   }
 
-  if (state.phase === "round-end" || state.phase === "finished") {
+  if (state.phase === "round-end") {
     return (
       <main className="mx-auto max-w-5xl space-y-6 p-4 sm:p-6">
         <BoardDisplay board={state.board} />
         <RoundEndPanel
           state={state}
-          onFinishRound={(winnerPlayerId, revealedHands) => {
-            if (Object.keys(revealedHands).length > 0) {
-              dispatch({ type: "REVEAL_HANDS", hands: revealedHands });
-            }
-            dispatch({ type: "FINISH_ROUND", winnerPlayerId });
-          }}
           onNewRound={(userHand) => dispatch({ type: "NEW_ROUND", userHand })}
+          onUndo={undo}
         />
       </main>
     );
   }
-
-  const scoreEntries = Object.entries(state.scores);
 
   return (
     <main className="mx-auto max-w-6xl space-y-5 p-4 sm:p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-slate-900">Dominó — Assistente</h1>
         <div className="flex flex-wrap items-center gap-3 text-sm font-semibold text-slate-600">
-          {scoreEntries.map(([key, points]) => (
-            <span key={key} className="rounded-full bg-slate-100 px-3 py-1 tabular-nums">
-              {key}: {points}
-            </span>
-          ))}
           <span className="tabular-nums">Rodada {state.roundNumber}</span>
           {state.config.boneyardEnabled && <span className="tabular-nums">Monte: {state.boneyardRemaining}</span>}
         </div>

@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { createDeck } from "@/engine/deck";
-import { GameConfig, Piece, Suit } from "@/engine/types";
-import { DominoTile } from "./DominoTile";
+import { GameConfig, Piece } from "@/engine/types";
+import { HandPicker } from "./HandPicker";
 
 interface SetupWizardProps {
   onComplete: (config: GameConfig, userHand: Piece[]) => void;
@@ -11,8 +10,6 @@ interface SetupWizardProps {
 
 type Step = "players" | "mode" | "direction" | "handSize" | "boneyard" | "starter" | "hand";
 
-const DECK = createDeck();
-const SUIT_GROUPS: Suit[] = [0, 1, 2, 3, 4, 5, 6];
 
 function StepButton({
   active,
@@ -219,56 +216,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
       {step === "hand" && (
         <section className="space-y-4">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-lg font-semibold text-slate-800">Selecione sua mão</h2>
-            <span
-              className={`rounded-full px-3 py-1 text-sm font-semibold tabular-nums ${
-                selectedHand.length === handSize ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              {selectedHand.length}/{handSize}
-            </span>
-          </div>
-
-          {selectedHand.length > 0 && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-800">Sua mão</p>
-              <div className="flex flex-wrap gap-2">
-                {selectedHand.map((piece) => (
-                  <DominoTile
-                    key={piece.id}
-                    piece={piece}
-                    size="sm"
-                    selected
-                    onClick={() => togglePiece(piece)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            {SUIT_GROUPS.map((suit) => (
-              <div key={suit} className="flex items-center gap-3">
-                <span className="w-4 shrink-0 text-right text-sm font-semibold tabular-nums text-slate-400">{suit}</span>
-                <div className="flex flex-wrap gap-2">
-                  {DECK.filter((piece) => piece.a === suit).map((piece) => {
-                    const selected = selectedHand.some((p) => p.id === piece.id);
-                    return (
-                      <DominoTile
-                        key={piece.id}
-                        piece={piece}
-                        size="sm"
-                        selected={selected}
-                        disabled={!selected && selectedHand.length >= handSize}
-                        onClick={() => togglePiece(piece)}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
+          <HandPicker label="Selecione sua mão" selected={selectedHand} max={handSize} onToggle={togglePiece} />
         </section>
       )}
 
