@@ -22,11 +22,11 @@ interface HandPickerProps {
 export function HandPicker({ label, selected, max, onToggle }: HandPickerProps) {
   return (
     <div className="space-y-4">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-lg font-semibold text-slate-800">{label}</h2>
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="font-display text-xl font-semibold text-ivory">{label}</h2>
         <span
-          className={`rounded-full px-3 py-1 text-sm font-semibold tabular-nums ${
-            selected.length === max ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
+          className={`rounded-full px-3 py-1 text-sm font-bold tabular-nums ${
+            selected.length === max ? "bg-gold text-gold-ink" : "bg-surface-2 text-mist"
           }`}
         >
           {selected.length}/{max}
@@ -34,8 +34,8 @@ export function HandPicker({ label, selected, max, onToggle }: HandPickerProps) 
       </div>
 
       {selected.length > 0 && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-800">Sua mão</p>
+        <div className="rounded-xl border border-gold/30 bg-gold/5 p-3">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-2">Sua mão</p>
           <div className="flex flex-wrap gap-2">
             {selected.map((piece) => (
               <DominoTile key={piece.id} piece={piece} size="sm" selected onClick={() => onToggle(piece)} />
@@ -47,7 +47,9 @@ export function HandPicker({ label, selected, max, onToggle }: HandPickerProps) 
       <div className="space-y-2">
         {SUIT_GROUPS.map((suit) => (
           <div key={suit} className="flex items-center gap-3">
-            <span className="w-4 shrink-0 text-right text-sm font-semibold tabular-nums text-slate-400">{suit}</span>
+            <span className="w-4 shrink-0 text-right font-display text-sm font-semibold tabular-nums text-faint">
+              {suit}
+            </span>
             <div className="flex flex-wrap gap-2">
               {DECK.filter((piece) => piece.a === suit).map((piece) => {
                 const isSelected = selected.some((p) => p.id === piece.id);

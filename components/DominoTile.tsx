@@ -57,10 +57,7 @@ function PipFace({ value, size }: { value: Suit; size: TileSize }) {
   return (
     <div className="grid flex-1 grid-cols-3 grid-rows-3 place-items-center p-1">
       {Array.from({ length: 9 }, (_, i) => (
-        <span
-          key={i}
-          className={filled.has(i) ? `${PIP_SIZE[size]} rounded-full bg-slate-900` : ""}
-        />
+        <span key={i} className={filled.has(i) ? `${PIP_SIZE[size]} rounded-full bg-pip shadow-[inset_0_1px_1px_rgba(0,0,0,0.45)]` : ""} />
       ))}
     </div>
   );
@@ -88,30 +85,31 @@ export function DominoTile({
       aria-label={isInteractive ? `Peça ${piece.a}-${piece.b}` : undefined}
       className={[
         SIZE_CLASSES[orientation][size],
-        "relative flex shrink-0 overflow-hidden rounded-lg bg-stone-50 shadow-sm transition-all duration-150",
+        "relative flex shrink-0 overflow-hidden rounded-lg bg-bone transition-all duration-150",
+        "shadow-[inset_0_1px_0_rgba(255,255,255,0.85),inset_0_-1px_2px_rgba(120,104,70,0.25),0_3px_8px_rgba(0,0,0,0.45)]",
         isVertical ? "flex-col" : "flex-row",
         selected
-          ? "border-2 border-amber-600 bg-amber-50 ring-2 ring-amber-400 ring-offset-1"
+          ? "border-2 border-gold ring-2 ring-gold/60 shadow-[0_0_18px_rgba(217,164,65,0.35),0_3px_8px_rgba(0,0,0,0.45)]"
           : highlighted
-            ? "border-2 border-amber-500 ring-2 ring-amber-300"
-            : "border-2 border-slate-700",
-        disabled ? "pointer-events-none opacity-30" : "",
+            ? "border-2 border-gold-2 ring-2 ring-gold/50 shadow-[0_0_16px_rgba(238,192,106,0.4),0_3px_8px_rgba(0,0,0,0.45)]"
+            : "border border-bone-edge",
+        disabled ? "pointer-events-none opacity-30 saturate-50" : "",
         isInteractive && !disabled
-          ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
+          ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_6px_14px_rgba(0,0,0,0.5)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
           : "",
       ].join(" ")}
     >
       <PipFace value={piece.a} size={size} />
       <span
         aria-hidden="true"
-        className={isVertical ? "mx-1 border-t-2 border-slate-700" : "my-1 border-l-2 border-slate-700"}
+        className={isVertical ? "mx-1.5 border-t border-bone-edge" : "my-1.5 border-l border-bone-edge"}
       />
       <PipFace value={piece.b} size={size} />
 
       {selected && (
         <span
           aria-hidden="true"
-          className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-amber-600 text-white shadow"
+          className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-gold text-gold-ink shadow"
         >
           <Check size={11} strokeWidth={3} />
         </span>

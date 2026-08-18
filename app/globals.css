@@ -1,19 +1,133 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * "Clube de Dominó" — the whole app is the table.
+ * Deep felt greens, bone-ivory tiles, brass accents.
+ */
+@theme {
+  /* felt (page + table) */
+  --color-felt-950: #0a1811;
+  --color-felt-900: #0e2117;
+  --color-felt-800: #132d1f;
+  --color-felt-700: #1a3d2b;
+  --color-felt-600: #225037;
+
+  /* panels */
+  --color-surface: #14211a;
+  --color-surface-2: #1a2b22;
+  --color-line: #27402f;
+  --color-line-strong: #3a5a44;
+
+  /* ink */
+  --color-ivory: #f2eddd;
+  --color-mist: #a9b8ab;
+  --color-faint: #6e8274;
+
+  /* tiles */
+  --color-bone: #f7f2e3;
+  --color-bone-edge: #c9bda0;
+  --color-pip: #26302a;
+
+  /* brass */
+  --color-gold: #d9a441;
+  --color-gold-2: #eec06a;
+  --color-gold-ink: #241a08;
+
+  /* wood rail around the table */
+  --color-rail: #3e2c1b;
+  --color-rail-2: #57402a;
+
+  /* feedback */
+  --color-danger: #e08464;
+  --color-danger-dim: #45221a;
+  --color-sky-note: #9cc6d8;
+  --color-sky-dim: #16303a;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background:
+    radial-gradient(1400px 700px at 50% -12%, rgb(34 80 55 / 0.5), transparent 62%),
+    radial-gradient(1000px 800px at 105% 110%, rgb(26 61 43 / 0.35), transparent 55%),
+    var(--color-felt-950);
+  color: var(--color-ivory);
+  font-family: var(--font-sans);
+}
+
+/* Grain over the felt — keeps large flat areas from feeling plastic. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+}
+
+main,
+header {
+  position: relative;
+  z-index: 1;
+}
+
+/* Panel entrance — one orchestrated load, no scattered motion. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.panel-in {
+  animation: rise 0.45s ease-out both;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.turn-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-in,
+  .turn-dot {
+    animation: none;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Thin brass-on-felt scrollbars for internal scroll regions. */
+.scroll-slim {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+.scroll-slim::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.scroll-slim::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 4px;
+}
+.scroll-slim::-webkit-scrollbar-track {
+  background: transparent;
 }

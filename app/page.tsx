@@ -61,10 +61,49 @@ export default function Home() {
     return <SetupWizard onComplete={(config, userHand) => dispatch({ type: "SETUP_COMPLETE", config, userHand })} />;
   }
 
+  const headerChips = (
+    <div className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+      <span className="rounded-full border border-line bg-surface px-3.5 py-1.5 text-mist tabular-nums">
+        Rodada {state.roundNumber}
+      </span>
+      {state.config.boneyardEnabled && (
+        <span className="rounded-full border border-line bg-surface px-3.5 py-1.5 text-mist tabular-nums">
+          Monte {state.boneyardRemaining}
+        </span>
+      )}
+      {isPlaying && (
+        <span
+          className={`flex items-center gap-2 rounded-full px-3.5 py-1.5 ${
+            isUserTurn ? "bg-gold text-gold-ink" : "border border-line bg-surface text-mist"
+          }`}
+        >
+          {isUserTurn && <span aria-hidden="true" className="turn-dot size-2 rounded-full bg-gold-ink" />}
+          {isUserTurn
+            ? "Sua vez"
+            : `Vez de ${
+                currentPlayer?.role === "partner" ? "Parceiro" : `Adversário ${currentPlayer?.id ?? ""}`
+              }`}
+        </span>
+      )}
+    </div>
+  );
+
+  const header = (
+    <header className="panel-in flex flex-wrap items-center justify-between gap-4">
+      <h1 className="font-display text-2xl font-semibold italic text-ivory">
+        Dominó <span className="not-italic text-sm font-sans font-medium tracking-wide text-faint">assistente de mesa</span>
+      </h1>
+      {headerChips}
+    </header>
+  );
+
   if (state.phase === "round-end") {
     return (
-      <main className="mx-auto max-w-5xl space-y-6 p-4 sm:p-6">
-        <BoardDisplay board={state.board} />
+      <main className="mx-auto w-full max-w-[1200px] space-y-6 px-5 py-6 xl:px-8">
+        {header}
+        <div className="panel-in [animation-delay:80ms]">
+          <BoardDisplay board={state.board} />
+        </div>
         <RoundEndPanel
           state={state}
           onNewRound={(userHand) => dispatch({ type: "NEW_ROUND", userHand })}
@@ -75,19 +114,15 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl space-y-5 p-4 sm:p-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold text-slate-900">Dominó — Assistente</h1>
-        <div className="flex flex-wrap items-center gap-3 text-sm font-semibold text-slate-600">
-          <span className="tabular-nums">Rodada {state.roundNumber}</span>
-          {state.config.boneyardEnabled && <span className="tabular-nums">Monte: {state.boneyardRemaining}</span>}
-        </div>
-      </header>
+    <main className="mx-auto w-full max-w-[1680px] space-y-6 px-5 py-6 xl:px-10">
+      {header}
 
-      <BoardDisplay board={state.board} />
+      <div className="panel-in [animation-delay:80ms]">
+        <BoardDisplay board={state.board} />
+      </div>
 
-      <div className="grid gap-5 lg:grid-cols-5">
-        <div className="space-y-5 lg:col-span-3">
+      <div className="grid gap-6 xl:grid-cols-12">
+        <div className="panel-in space-y-6 [animation-delay:160ms] xl:col-span-7">
           <TurnController
             state={state}
             candidates={candidates}
@@ -110,7 +145,7 @@ export default function Home() {
           )}
         </div>
 
-        <div className="space-y-5 lg:col-span-2">
+        <div className="panel-in space-y-6 self-start [animation-delay:240ms] xl:sticky xl:top-6 xl:col-span-5">
           {user?.hand && (
             <UserHand
               hand={user.hand}
@@ -120,8 +155,8 @@ export default function Home() {
             />
           )}
 
-          <section className="rounded-xl border border-slate-200 p-4">
-            <h2 className="mb-2 text-sm font-semibold text-slate-700">Histórico</h2>
+          <section className="rounded-2xl border border-line bg-surface p-5 shadow-[0_6px_24px_rgba(0,0,0,0.35)]">
+            <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-mist">Histórico</h2>
             <GameHistoryLog state={state} />
           </section>
         </div>

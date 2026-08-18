@@ -50,17 +50,17 @@ export function RoundEndPanel({ state, onNewRound, onUndo }: RoundEndPanelProps)
   }
 
   return (
-    <div className="space-y-5 rounded-xl border border-slate-200 p-4 sm:p-6">
+    <div className="panel-in space-y-6 rounded-2xl border border-line bg-surface p-6 shadow-[0_16px_60px_rgba(0,0,0,0.5)] sm:p-8">
       {state.error && (
-        <p role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="rounded-lg border border-danger/50 bg-danger-dim px-3 py-2 text-sm text-danger">
           {state.error}
         </p>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="space-y-1">
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-            {userSideWon && <Trophy size={20} className="text-amber-700" aria-hidden="true" />}
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-2">
+          <h2 className="flex items-center gap-3 font-display text-3xl font-semibold text-ivory">
+            {userSideWon && <Trophy size={28} className="text-gold" aria-hidden="true" />}
             {isBatida
               ? winner
                 ? `${playerLabel(state, winner.id)} bateu!`
@@ -69,16 +69,14 @@ export function RoundEndPanel({ state, onNewRound, onUndo }: RoundEndPanelProps)
                 ? `Jogo trancado — ${playerLabel(state, winner.id)} venceu`
                 : "Jogo trancado — empate"}
           </h2>
-          <p className="text-sm text-slate-600">
+          <p className="flex flex-wrap items-center gap-2 text-sm text-mist">
             {isBatida && state.batidaType && (
-              <span className="mr-2 inline-block rounded-full bg-amber-100 px-3 py-0.5 font-semibold text-amber-900">
+              <span className="inline-block rounded-full bg-gold px-3 py-0.5 font-bold text-gold-ink">
                 {BATIDA_LABEL[state.batidaType]}
               </span>
             )}
             {!isBatida &&
-              (winner
-                ? "Menos peças na mão ao trancar."
-                : "Mesmo número de peças na mão — ninguém leva a rodada.")}
+              (winner ? "Menos peças na mão ao trancar." : "Mesmo número de peças na mão — ninguém leva a rodada.")}
             {isBatida && state.config.mode === "duplas" && winner && (
               <span>{userSideWon ? "Vitória da sua dupla." : "Vitória da dupla adversária."}</span>
             )}
@@ -89,14 +87,14 @@ export function RoundEndPanel({ state, onNewRound, onUndo }: RoundEndPanelProps)
           type="button"
           onClick={onUndo}
           disabled={state.history.length === 0}
-          className="flex min-h-11 items-center gap-1 rounded-lg border-2 border-slate-300 px-3 py-2 font-semibold text-slate-700 hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+          className="flex min-h-11 items-center gap-1.5 rounded-lg border border-line-strong px-3 py-2 text-sm font-semibold text-mist transition-colors hover:bg-surface-2 hover:text-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:pointer-events-none disabled:opacity-40"
         >
-          <Undo2 size={20} aria-hidden="true" />
+          <Undo2 size={18} aria-hidden="true" />
           Desfazer última jogada
         </button>
       </div>
 
-      <hr className="border-slate-100" />
+      <hr className="border-line/60" />
 
       <HandPicker
         label={`Nova rodada ${state.roundNumber + 1} — selecione sua mão`}
@@ -109,7 +107,7 @@ export function RoundEndPanel({ state, onNewRound, onUndo }: RoundEndPanelProps)
         type="button"
         disabled={newHand.length !== state.config.handSize}
         onClick={() => onNewRound(newHand)}
-        className="min-h-11 rounded-lg bg-amber-700 px-5 py-2 font-semibold text-white hover:bg-amber-800 disabled:pointer-events-none disabled:opacity-40"
+        className="min-h-11 rounded-lg bg-gold px-6 py-2 font-semibold text-gold-ink transition-colors hover:bg-gold-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:pointer-events-none disabled:opacity-40"
       >
         Iniciar nova rodada
       </button>

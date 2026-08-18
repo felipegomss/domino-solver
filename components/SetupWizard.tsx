@@ -10,6 +10,15 @@ interface SetupWizardProps {
 
 type Step = "players" | "mode" | "direction" | "handSize" | "boneyard" | "starter" | "hand";
 
+const STEP_TITLES: Record<Step, string> = {
+  players: "Quantos jogadores?",
+  mode: "Modo de jogo",
+  direction: "Sentido do jogo",
+  handSize: "Pedras iniciais por jogador",
+  boneyard: "Regra do monte",
+  hand: "Selecione sua mão",
+  starter: "Quem inicia?",
+};
 
 function StepButton({
   active,
@@ -24,8 +33,11 @@ function StepButton({
     <button
       type="button"
       onClick={onClick}
-      className={`min-h-11 rounded-lg border-2 px-4 py-3 text-left font-semibold transition-colors ${
-        active ? "border-amber-500 bg-amber-50 text-amber-900" : "border-slate-300 text-slate-700 hover:bg-slate-50"
+      aria-pressed={active}
+      className={`min-h-11 rounded-lg border px-4 py-3 text-left font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${
+        active
+          ? "border-gold bg-gold/10 text-gold-2"
+          : "border-line-strong text-mist hover:bg-surface-2 hover:text-ivory"
       }`}
     >
       {children}
@@ -45,6 +57,17 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
   const dealtTotal = numPlayers * handSize;
   const hasBoneyard = dealtTotal < 28;
+
+  const visibleSteps: Step[] = [
+    "players",
+    ...(numPlayers === 4 ? (["mode"] as Step[]) : []),
+    "direction",
+    "handSize",
+    ...(hasBoneyard ? (["boneyard"] as Step[]) : []),
+    "hand",
+    "starter",
+  ];
+  const stepIndex = visibleSteps.indexOf(step);
 
   const starterOptions: { id: number; label: string }[] = [{ id: 0, label: "Você" }];
   if (mode === "duplas" && numPlayers === 4) starterOptions.push({ id: 2, label: "Parceiro" });
@@ -95,159 +118,177 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-6 p-6">
-      <h1 className="text-2xl font-semibold text-slate-900">Configurar Partida</h1>
+    <main className="flex min-h-dvh items-start justify-center px-4 py-10 sm:items-center">
+      <div className="panel-in w-full max-w-2xl space-y-6 rounded-2xl border border-line bg-surface p-6 shadow-[0_16px_60px_rgba(0,0,0,0.5)] sm:p-8">
+        <header className="space-y-2">
+          <p className="font-display text-sm italic text-gold">Dominó — assistente de mesa</p>
+          <h1 className="font-display text-3xl font-semibold text-ivory">Configurar partida</h1>
+          <div className="flex items-center gap-1.5 pt-1" aria-label={`Etapa ${stepIndex + 1} de ${visibleSteps.length}`}>
+            {visibleSteps.map((s, i) => (
+              <span
+                key={s}
+                aria-hidden="true"
+                className={`h-1 rounded-full transition-all ${
+                  i < stepIndex ? "w-5 bg-gold/50" : i === stepIndex ? "w-8 bg-gold" : "w-5 bg-line"
+                }`}
+              />
+            ))}
+          </div>
+        </header>
 
-      {step === "players" && (
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-800">Quantos jogadores?</h2>
-          <div className="grid grid-cols-3 gap-3">
-            {[2, 3, 4].map((n) => (
+        {step === "players" && (
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold text-ivory">{STEP_TITLES.players}</h2>
+            <div className="grid grid-cols-3 gap-3">
+              {[2, 3, 4].map((n) => (
+                <StepButton
+                  key={n}
+                  active={numPlayers === n}
+                  onClick={() => {
+                    setNumPlayers(n as 2 | 3 | 4);
+                    setStartingPlayer(0);
+                  }}
+                >
+                  <span className="block text-center font-display text-2xl">{n}</span>
+                </StepButton>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {step === "mode" && (
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold text-ivory">{STEP_TITLES.mode}</h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <StepButton
-                key={n}
-                active={numPlayers === n}
+                active={mode === "individual"}
                 onClick={() => {
-                  setNumPlayers(n as 2 | 3 | 4);
+                  setMode("individual");
                   setStartingPlayer(0);
                 }}
               >
-                <span className="block text-center">{n}</span>
+                Individual
               </StepButton>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {step === "mode" && (
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-800">Modo de jogo</h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <StepButton
-              active={mode === "individual"}
-              onClick={() => {
-                setMode("individual");
-                setStartingPlayer(0);
-              }}
-            >
-              Individual
-            </StepButton>
-            <StepButton
-              active={mode === "duplas"}
-              onClick={() => {
-                setMode("duplas");
-                setStartingPlayer(0);
-              }}
-            >
-              Duplas (0+2 vs 1+3)
-            </StepButton>
-          </div>
-        </section>
-      )}
-
-      {step === "direction" && (
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-800">Sentido do jogo</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <StepButton active={direction === "cw"} onClick={() => setDirection("cw")}>
-              Horário
-            </StepButton>
-            <StepButton active={direction === "ccw"} onClick={() => setDirection("ccw")}>
-              Anti-horário
-            </StepButton>
-          </div>
-        </section>
-      )}
-
-      {step === "handSize" && (
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-800">Pedras iniciais por jogador</h2>
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={() => setHandSize((h) => Math.max(1, h - 1))}
-              className="min-h-11 min-w-11 rounded-lg border-2 border-slate-300 text-xl font-bold hover:bg-slate-50"
-              aria-label="Diminuir"
-            >
-              −
-            </button>
-            <span className="w-12 text-center text-2xl font-semibold tabular-nums">{handSize}</span>
-            <button
-              type="button"
-              onClick={() => setHandSize((h) => Math.min(14, h + 1))}
-              className="min-h-11 min-w-11 rounded-lg border-2 border-slate-300 text-xl font-bold hover:bg-slate-50"
-              aria-label="Aumentar"
-            >
-              +
-            </button>
-          </div>
-          <p className="text-sm text-slate-500">
-            {dealtTotal} de 28 peças distribuídas
-            {hasBoneyard ? ` — ${28 - dealtTotal} peças formarão o monte.` : " — todas as peças distribuídas."}
-          </p>
-        </section>
-      )}
-
-      {step === "boneyard" && (
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-800">Regra do monte</h2>
-          <div className="grid grid-cols-1 gap-3">
-            <StepButton active={boneyardEnabled} onClick={() => setBoneyardEnabled(true)}>
-              Com monte — comprar antes de passar
-            </StepButton>
-            <StepButton active={!boneyardEnabled} onClick={() => setBoneyardEnabled(false)}>
-              Sem monte — peças restantes ficam fora do jogo
-            </StepButton>
-          </div>
-        </section>
-      )}
-
-      {step === "starter" && (
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-800">Quem inicia?</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {starterOptions.map((opt) => (
-              <StepButton key={opt.id} active={startingPlayer === opt.id} onClick={() => setStartingPlayer(opt.id)}>
-                {opt.label}
+              <StepButton
+                active={mode === "duplas"}
+                onClick={() => {
+                  setMode("duplas");
+                  setStartingPlayer(0);
+                }}
+              >
+                Duplas (0+2 vs 1+3)
               </StepButton>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {step === "hand" && (
-        <section className="space-y-4">
-          <HandPicker label="Selecione sua mão" selected={selectedHand} max={handSize} onToggle={togglePiece} />
-        </section>
-      )}
-
-      <div className="flex justify-between pt-4">
-        <button
-          type="button"
-          onClick={goBack}
-          disabled={step === "players"}
-          className="min-h-11 rounded-lg border-2 border-slate-300 px-5 py-2 font-semibold text-slate-700 hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
-        >
-          Voltar
-        </button>
-        {step === "starter" ? (
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="min-h-11 rounded-lg bg-amber-700 px-5 py-2 font-semibold text-white hover:bg-amber-800"
-          >
-            Começar Partida
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={goNext}
-            disabled={step === "hand" && selectedHand.length !== handSize}
-            className="min-h-11 rounded-lg bg-amber-700 px-5 py-2 font-semibold text-white hover:bg-amber-800 disabled:pointer-events-none disabled:opacity-40"
-          >
-            Próximo
-          </button>
+            </div>
+          </section>
         )}
+
+        {step === "direction" && (
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold text-ivory">{STEP_TITLES.direction}</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <StepButton active={direction === "cw"} onClick={() => setDirection("cw")}>
+                Horário
+              </StepButton>
+              <StepButton active={direction === "ccw"} onClick={() => setDirection("ccw")}>
+                Anti-horário
+              </StepButton>
+            </div>
+          </section>
+        )}
+
+        {step === "handSize" && (
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold text-ivory">{STEP_TITLES.handSize}</h2>
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => setHandSize((h) => Math.max(1, h - 1))}
+                className="min-h-11 min-w-11 rounded-lg border border-line-strong text-xl font-bold text-mist transition-colors hover:bg-surface-2 hover:text-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                aria-label="Diminuir"
+              >
+                −
+              </button>
+              <span className="w-12 text-center font-display text-3xl font-semibold tabular-nums text-gold-2">
+                {handSize}
+              </span>
+              <button
+                type="button"
+                onClick={() => setHandSize((h) => Math.min(14, h + 1))}
+                className="min-h-11 min-w-11 rounded-lg border border-line-strong text-xl font-bold text-mist transition-colors hover:bg-surface-2 hover:text-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                aria-label="Aumentar"
+              >
+                +
+              </button>
+            </div>
+            <p className="text-sm text-faint">
+              {dealtTotal} de 28 peças distribuídas
+              {hasBoneyard ? ` — ${28 - dealtTotal} peças formarão o monte.` : " — todas as peças distribuídas."}
+            </p>
+          </section>
+        )}
+
+        {step === "boneyard" && (
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold text-ivory">{STEP_TITLES.boneyard}</h2>
+            <div className="grid grid-cols-1 gap-3">
+              <StepButton active={boneyardEnabled} onClick={() => setBoneyardEnabled(true)}>
+                Com monte — comprar antes de passar
+              </StepButton>
+              <StepButton active={!boneyardEnabled} onClick={() => setBoneyardEnabled(false)}>
+                Sem monte — peças restantes ficam fora do jogo
+              </StepButton>
+            </div>
+          </section>
+        )}
+
+        {step === "starter" && (
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold text-ivory">{STEP_TITLES.starter}</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {starterOptions.map((opt) => (
+                <StepButton key={opt.id} active={startingPlayer === opt.id} onClick={() => setStartingPlayer(opt.id)}>
+                  {opt.label}
+                </StepButton>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {step === "hand" && (
+          <section className="space-y-4">
+            <HandPicker label={STEP_TITLES.hand} selected={selectedHand} max={handSize} onToggle={togglePiece} />
+          </section>
+        )}
+
+        <div className="flex justify-between pt-2">
+          <button
+            type="button"
+            onClick={goBack}
+            disabled={step === "players"}
+            className="min-h-11 rounded-lg border border-line-strong px-5 py-2 font-semibold text-mist transition-colors hover:bg-surface-2 hover:text-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:pointer-events-none disabled:opacity-40"
+          >
+            Voltar
+          </button>
+          {step === "starter" ? (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="min-h-11 rounded-lg bg-gold px-6 py-2 font-semibold text-gold-ink transition-colors hover:bg-gold-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            >
+              Começar partida
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={goNext}
+              disabled={step === "hand" && selectedHand.length !== handSize}
+              className="min-h-11 rounded-lg bg-gold px-6 py-2 font-semibold text-gold-ink transition-colors hover:bg-gold-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:pointer-events-none disabled:opacity-40"
+            >
+              Próximo
+            </button>
+          )}
+        </div>
       </div>
-    </div>
+    </main>
   );
 }

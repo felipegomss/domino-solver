@@ -66,24 +66,25 @@ export function TurnController({
   }
 
   return (
-    <section className="space-y-4 rounded-xl border border-slate-200 p-4">
+    <section className="space-y-4 rounded-2xl border border-line bg-surface p-5 shadow-[0_6px_24px_rgba(0,0,0,0.35)]">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="font-semibold text-slate-800">
+        <h2 className="flex items-center gap-2.5 font-display text-xl font-semibold text-ivory">
+          {isUserTurn && <span aria-hidden="true" className="turn-dot size-2.5 rounded-full bg-gold" />}
           {isUserTurn ? "Sua vez" : `Vez de ${currentPlayer ? playerLabel(state, currentPlayer.id) : "—"}`}
         </h2>
         <button
           type="button"
           onClick={onUndo}
           disabled={state.history.length === 0}
-          className="flex min-h-11 items-center gap-1 rounded-lg border-2 border-slate-300 px-3 py-2 font-semibold text-slate-700 hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40"
+          className="flex min-h-11 items-center gap-1.5 rounded-lg border border-line-strong px-3 py-2 text-sm font-semibold text-mist transition-colors hover:bg-surface-2 hover:text-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:pointer-events-none disabled:opacity-40"
         >
-          <Undo2 size={20} aria-hidden="true" />
+          <Undo2 size={18} aria-hidden="true" />
           Desfazer
         </button>
       </div>
 
       {state.error && (
-        <p role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="rounded-lg border border-danger/50 bg-danger-dim px-3 py-2 text-sm text-danger">
           {state.error}
         </p>
       )}
@@ -92,21 +93,21 @@ export function TurnController({
         <div className="space-y-3">
           {surePass ? (
             <>
-              <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+              <p className="rounded-lg border border-sky-note/30 bg-sky-dim px-3 py-2 text-sm text-sky-note">
                 Nenhuma peça que encaixe nas pontas {state.board.leftEnd} e {state.board.rightEnd} ainda está em jogo —{" "}
                 {playerLabel(state, currentPlayer.id)} só pode passar.
               </p>
               <button
                 type="button"
                 onClick={onPass}
-                className="min-h-11 rounded-lg bg-amber-700 px-4 py-2 font-semibold text-white hover:bg-amber-800"
+                className="min-h-11 rounded-lg bg-gold px-5 py-2 font-semibold text-gold-ink transition-colors hover:bg-gold-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
               >
                 Passou a vez
               </button>
             </>
           ) : pendingPiece ? (
             <>
-              <p className="text-sm text-slate-600">Em qual ponta essa peça foi jogada?</p>
+              <p className="text-sm text-mist">Em qual ponta essa peça foi jogada?</p>
               <div className="flex flex-wrap items-center gap-3">
                 <DominoTile piece={pendingPiece} size="sm" selected />
                 {playableEnds(pendingPiece, state).map((end) => (
@@ -114,7 +115,7 @@ export function TurnController({
                     key={end}
                     type="button"
                     onClick={() => chooseEnd(end)}
-                    className="min-h-11 rounded-lg border-2 border-amber-500 bg-amber-50 px-4 py-2 font-semibold text-amber-900 hover:bg-amber-100"
+                    className="min-h-11 rounded-lg border border-gold/60 bg-gold/10 px-4 py-2 font-semibold text-gold-2 transition-colors hover:bg-gold/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                   >
                     {end === "left" ? `Esquerda (${state.board.leftEnd})` : `Direita (${state.board.rightEnd})`}
                   </button>
@@ -122,7 +123,7 @@ export function TurnController({
                 <button
                   type="button"
                   onClick={() => setPendingPiece(null)}
-                  className="min-h-11 rounded-lg border-2 border-slate-300 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                  className="min-h-11 rounded-lg border border-line-strong px-4 py-2 font-semibold text-mist transition-colors hover:bg-surface-2 hover:text-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                 >
                   Cancelar
                 </button>
@@ -130,14 +131,14 @@ export function TurnController({
             </>
           ) : (
             <>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-mist">
                 Qual peça {playerLabel(state, currentPlayer.id)} jogou?{" "}
-                <span className="text-slate-400">
+                <span className="text-faint">
                   ({candidates.length} possíve{candidates.length === 1 ? "l" : "is"})
                 </span>
               </p>
               {candidates.length === 0 ? (
-                <p className="text-sm text-slate-500">Nenhuma peça possível — registre um passe ou uma compra.</p>
+                <p className="text-sm text-faint">Nenhuma peça possível — registre um passe ou uma compra.</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
                   {candidates.map((piece) => (
@@ -150,7 +151,7 @@ export function TurnController({
                   <button
                     type="button"
                     onClick={onDraw}
-                    className="min-h-11 rounded-lg border-2 border-slate-300 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                    className="min-h-11 rounded-lg border border-line-strong px-4 py-2 font-semibold text-mist transition-colors hover:bg-surface-2 hover:text-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                   >
                     Comprou do monte
                   </button>
@@ -158,7 +159,7 @@ export function TurnController({
                   <button
                     type="button"
                     onClick={onPass}
-                    className="min-h-11 rounded-lg border-2 border-slate-300 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                    className="min-h-11 rounded-lg border border-line-strong px-4 py-2 font-semibold text-mist transition-colors hover:bg-surface-2 hover:text-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
                   >
                     Passou a vez
                   </button>

@@ -22,24 +22,24 @@ export function UserHand({ hand, board, topRecommendedPieceId, isUserTurn }: Use
   const playableCount = hand.filter((p) => isPlayable(p, board)).length;
 
   return (
-    <section className="space-y-2 rounded-xl border border-slate-200 p-4">
+    <section className="space-y-3 rounded-2xl border border-line bg-surface p-5 shadow-[0_6px_24px_rgba(0,0,0,0.35)]">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold text-slate-700">Sua mão ({hand.length})</h2>
-        <p className="text-xs text-slate-500 tabular-nums">
-          {handPipSum(hand)} pontos na mão ·{" "}
-          {playableCount > 0 ? `${playableCount} jogável(is) agora` : "nenhuma peça encaixa nas pontas"}
+        <h2 className="font-display text-xl font-semibold text-ivory">Sua mão ({hand.length})</h2>
+        <p className="text-xs text-faint tabular-nums">
+          {handPipSum(hand)} pontos ·{" "}
+          {playableCount > 0 ? `${playableCount} jogável(is)` : "nenhuma encaixa"}
         </p>
       </div>
 
       {hand.length === 0 ? (
-        <p className="text-sm text-slate-400">Mão vazia.</p>
+        <p className="text-sm text-faint">Mão vazia.</p>
       ) : (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2.5">
           {hand.map((piece) => (
             <DominoTile
               key={piece.id}
               piece={piece}
-              size="sm"
+              size="md"
               disabled={!isPlayable(piece, board)}
               highlighted={isUserTurn && piece.id === topRecommendedPieceId}
             />
