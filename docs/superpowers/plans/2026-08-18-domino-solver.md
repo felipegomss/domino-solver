@@ -2452,8 +2452,6 @@ function RevealRow({
   onToggle: () => void;
   onConfirm: (pieces: Piece[]) => void;
 }) {
-  const [picked, setPicked] = useState<Piece[]>([]);
-
   return (
     <div className="rounded-lg border border-slate-200 p-3">
       <button
@@ -2464,40 +2462,59 @@ function RevealRow({
       >
         Jogador {player.id} {revealedCount > 0 ? `— ${revealedCount} peça(s) revelada(s)` : "— não revelado"}
       </button>
-      {revealed && (
-        <div className="mt-2 space-y-2">
-          <p className="text-xs text-slate-500">
-            Selecione {player.handSize} peça(s) ({picked.length}/{player.handSize})
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {unknown.map((piece) => {
-              const selected = picked.some((p) => p.id === piece.id);
-              return (
-                <DominoTile
-                  key={piece.id}
-                  piece={piece}
-                  size="sm"
-                  selected={selected}
-                  disabled={!selected && picked.length >= player.handSize}
-                  onClick={() => setPicked((prev) => (selected ? prev.filter((p) => p.id !== piece.id) : [...prev, piece]))}
-                />
-              );
-            })}
-          </div>
-          <button
-            type="button"
-            disabled={picked.length !== player.handSize}
-            onClick={() => onConfirm(picked)}
-            className="min-h-11 rounded-lg border-2 border-amber-500 px-3 py-2 font-semibold text-amber-900 disabled:pointer-events-none disabled:opacity-40"
-          >
-            Confirmar
-          </button>
-        </div>
-      )}
+      {/* Mounted only while expanded, so its local `picked` selection is
+          discarded on collapse instead of going stale against `unknown`. */}
+      {revealed && <RevealPicker player={player} unknown={unknown} onConfirm={onConfirm} />}
     </div>
   );
 }
 
+function RevealPicker({
+  player,
+  unknown,
+  onConfirm,
+}: {
+  player: PlayerState;
+  unknown: Piece[];
+  onConfirm: (pieces: Piece[]) => void;
+}) {
+  const [picked, setPicked] = useState<Piece[]>([]);
+
+  return (
+    <div className="mt-2 space-y-2">
+      <p className="text-xs text-slate-500">
+        Selecione {player.handSize} peça(s) ({picked.length}/{player.handSize})
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {unknown.map((piece) => {
+          const selected = picked.some((p) => p.id === piece.id);
+          return (
+            <DominoTile
+              key={piece.id}
+              piece={piece}
+              size="sm"
+              selected={selected}
+              disabled={!selected && picked.length >= player.handSize}
+              onClick={() => setPicked((prev) => (selected ? prev.filter((p) => p.id !== piece.id) : [...prev, piece]))}
+            />
+          );
+        })}
+      </div>
+      <button
+        type="button"
+        disabled={picked.length !== player.handSize}
+        onClick={() => onConfirm(picked)}
+        className="min-h-11 rounded-lg border-2 border-amber-500 px-3 py-2 font-semibold text-amber-900 disabled:pointer-events-none disabled:opacity-40"
+      >
+        Confirmar
+      </button>
+    </div>
+  );
+}
+
+// Assumes the parent unmounts/remounts this component between rounds (phase
+// transitions out of "round-end"/"finished" and back to "playing" via a
+// separate render branch) — local state here is never explicitly reset.
 export function RoundEndPanel({ state, onFinishRound, onNewRound }: RoundEndPanelProps) {
   const [winnerId, setWinnerId] = useState<number | null>(null);
   const [revealing, setRevealing] = useState<number | null>(null);
@@ -2512,6 +2529,11 @@ export function RoundEndPanel({ state, onFinishRound, onNewRound }: RoundEndPane
   if (state.phase === "finished") {
     return (
       <div className="space-y-4 rounded-xl border border-slate-200 p-4">
+        {state.error && (
+          <p role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {state.error}
+          </p>
+        )}
         <h2 className="text-lg font-semibold text-slate-900">Rodada {state.roundNumber} encerrada</h2>
         <ul className="space-y-1 text-sm text-slate-700">
           {Object.entries(state.scores).map(([key, points]) => (
@@ -2556,6 +2578,11 @@ export function RoundEndPanel({ state, onFinishRound, onNewRound }: RoundEndPane
 
   return (
     <div className="space-y-4 rounded-xl border border-slate-200 p-4">
+      {state.error && (
+        <p role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {state.error}
+        </p>
+      )}
       <h2 className="text-lg font-semibold text-slate-900">
         {state.roundEndReason === "batida" ? "Batida!" : "Jogo trancado"}
       </h2>
