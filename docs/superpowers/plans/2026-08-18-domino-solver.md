@@ -272,7 +272,7 @@ export function handPipSum(pieces: Piece[]): number {
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `pnpm test engine/deck.test.ts`
-Expected: PASS (7 tests).
+Expected: PASS (6 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -590,7 +590,7 @@ export function computeRoundScore(
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `pnpm test engine/inference.test.ts`
-Expected: PASS (11 tests).
+Expected: PASS (13 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -1978,7 +1978,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
             type="button"
             onClick={handleSubmit}
             disabled={selectedHand.length !== handSize}
-            className="min-h-11 rounded-lg bg-amber-600 px-5 py-2 font-semibold text-white hover:bg-amber-700 disabled:pointer-events-none disabled:opacity-40"
+            className="min-h-11 rounded-lg bg-amber-700 px-5 py-2 font-semibold text-white hover:bg-amber-800 disabled:pointer-events-none disabled:opacity-40"
           >
             Começar Partida
           </button>
@@ -1986,7 +1986,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
           <button
             type="button"
             onClick={goNext}
-            className="min-h-11 rounded-lg bg-amber-600 px-5 py-2 font-semibold text-white hover:bg-amber-700"
+            className="min-h-11 rounded-lg bg-amber-700 px-5 py-2 font-semibold text-white hover:bg-amber-800"
           >
             Próximo
           </button>
@@ -2304,7 +2304,7 @@ export function TurnController({ state, onPlayOpponentPiece, onPass, onDraw, onU
               type="button"
               onClick={handleConfirmPlay}
               disabled={a === null || b === null}
-              className="min-h-11 rounded-lg bg-amber-600 px-4 py-2 font-semibold text-white hover:bg-amber-700 disabled:pointer-events-none disabled:opacity-40"
+              className="min-h-11 rounded-lg bg-amber-700 px-4 py-2 font-semibold text-white hover:bg-amber-800 disabled:pointer-events-none disabled:opacity-40"
             >
               Confirmar jogada
             </button>
@@ -2522,7 +2522,7 @@ export function RoundEndPanel({ state, onFinishRound, onNewRound }: RoundEndPane
           type="button"
           disabled={newHand.length !== state.config.handSize}
           onClick={() => onNewRound(newHand)}
-          className="min-h-11 rounded-lg bg-amber-600 px-4 py-2 font-semibold text-white hover:bg-amber-700 disabled:pointer-events-none disabled:opacity-40"
+          className="min-h-11 rounded-lg bg-amber-700 px-4 py-2 font-semibold text-white hover:bg-amber-800 disabled:pointer-events-none disabled:opacity-40"
         >
           Iniciar nova rodada
         </button>
@@ -2586,7 +2586,7 @@ export function RoundEndPanel({ state, onFinishRound, onNewRound }: RoundEndPane
         type="button"
         disabled={winnerId === null}
         onClick={() => winnerId !== null && onFinishRound(winnerId, revealedHands)}
-        className="min-h-11 rounded-lg bg-amber-600 px-4 py-2 font-semibold text-white hover:bg-amber-700 disabled:pointer-events-none disabled:opacity-40"
+        className="min-h-11 rounded-lg bg-amber-700 px-4 py-2 font-semibold text-white hover:bg-amber-800 disabled:pointer-events-none disabled:opacity-40"
       >
         Calcular pontuação
       </button>
