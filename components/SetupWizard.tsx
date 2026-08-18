@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createDeck } from "@/engine/deck";
-import { GameConfig, Piece } from "@/engine/types";
+import { GameConfig, Piece, Suit } from "@/engine/types";
 import { DominoTile } from "./DominoTile";
 
 interface SetupWizardProps {
@@ -12,6 +12,7 @@ interface SetupWizardProps {
 type Step = "players" | "mode" | "direction" | "handSize" | "boneyard" | "starter" | "hand";
 
 const DECK = createDeck();
+const SUIT_GROUPS: Suit[] = [0, 1, 2, 3, 4, 5, 6];
 
 function StepButton({
   active,
@@ -68,14 +69,14 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
     if (step === "players") setStep(numPlayers === 4 ? "mode" : "direction");
     else if (step === "mode") setStep("direction");
     else if (step === "direction") setStep("handSize");
-    else if (step === "handSize") setStep(hasBoneyard ? "boneyard" : "starter");
-    else if (step === "boneyard") setStep("starter");
-    else if (step === "starter") setStep("hand");
+    else if (step === "handSize") setStep(hasBoneyard ? "boneyard" : "hand");
+    else if (step === "boneyard") setStep("hand");
+    else if (step === "hand") setStep("starter");
   }
 
   function goBack() {
-    if (step === "hand") setStep("starter");
-    else if (step === "starter") setStep(hasBoneyard ? "boneyard" : "handSize");
+    if (step === "starter") setStep("hand");
+    else if (step === "hand") setStep(hasBoneyard ? "boneyard" : "handSize");
     else if (step === "boneyard") setStep("handSize");
     else if (step === "handSize") setStep("direction");
     else if (step === "direction") setStep(numPlayers === 4 ? "mode" : "players");
@@ -218,23 +219,55 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
       {step === "hand" && (
         <section className="space-y-4">
-          <h2 className="text-lg font-semibold text-slate-800">
-            Selecione sua mão ({selectedHand.length}/{handSize})
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {DECK.map((piece) => {
-              const selected = selectedHand.some((p) => p.id === piece.id);
-              return (
-                <DominoTile
-                  key={piece.id}
-                  piece={piece}
-                  size="sm"
-                  selected={selected}
-                  disabled={!selected && selectedHand.length >= handSize}
-                  onClick={() => togglePiece(piece)}
-                />
-              );
-            })}
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-lg font-semibold text-slate-800">Selecione sua mão</h2>
+            <span
+              className={`rounded-full px-3 py-1 text-sm font-semibold tabular-nums ${
+                selectedHand.length === handSize ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600"
+              }`}
+            >
+              {selectedHand.length}/{handSize}
+            </span>
+          </div>
+
+          {selectedHand.length > 0 && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-800">Sua mão</p>
+              <div className="flex flex-wrap gap-2">
+                {selectedHand.map((piece) => (
+                  <DominoTile
+                    key={piece.id}
+                    piece={piece}
+                    size="sm"
+                    selected
+                    onClick={() => togglePiece(piece)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            {SUIT_GROUPS.map((suit) => (
+              <div key={suit} className="flex items-center gap-3">
+                <span className="w-4 shrink-0 text-right text-sm font-semibold tabular-nums text-slate-400">{suit}</span>
+                <div className="flex flex-wrap gap-2">
+                  {DECK.filter((piece) => piece.a === suit).map((piece) => {
+                    const selected = selectedHand.some((p) => p.id === piece.id);
+                    return (
+                      <DominoTile
+                        key={piece.id}
+                        piece={piece}
+                        size="sm"
+                        selected={selected}
+                        disabled={!selected && selectedHand.length >= handSize}
+                        onClick={() => togglePiece(piece)}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       )}
@@ -248,12 +281,11 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
         >
           Voltar
         </button>
-        {step === "hand" ? (
+        {step === "starter" ? (
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={selectedHand.length !== handSize}
-            className="min-h-11 rounded-lg bg-amber-700 px-5 py-2 font-semibold text-white hover:bg-amber-800 disabled:pointer-events-none disabled:opacity-40"
+            className="min-h-11 rounded-lg bg-amber-700 px-5 py-2 font-semibold text-white hover:bg-amber-800"
           >
             Começar Partida
           </button>
@@ -261,7 +293,8 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
           <button
             type="button"
             onClick={goNext}
-            className="min-h-11 rounded-lg bg-amber-700 px-5 py-2 font-semibold text-white hover:bg-amber-800"
+            disabled={step === "hand" && selectedHand.length !== handSize}
+            className="min-h-11 rounded-lg bg-amber-700 px-5 py-2 font-semibold text-white hover:bg-amber-800 disabled:pointer-events-none disabled:opacity-40"
           >
             Próximo
           </button>

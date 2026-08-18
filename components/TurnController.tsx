@@ -2,64 +2,75 @@
 
 import { useState } from "react";
 import { Undo2 } from "lucide-react";
-import { End, GameState, Suit } from "@/engine/types";
+import { End, GameState, Piece } from "@/engine/types";
+import { DominoTile } from "./DominoTile";
 
 interface TurnControllerProps {
   state: GameState;
-  onPlayOpponentPiece: (a: Suit, b: Suit, end: End) => void;
+  /** Pieces that could still legally be played here, per the inference engine. */
+  candidates: Piece[];
+  /** True when the engine can prove this player has no legal move at all. */
+  surePass: boolean;
+  onPlayPiece: (pieceId: string, end: End) => void;
   onPass: () => void;
   onDraw: () => void;
   onUndo: () => void;
 }
 
-const SUITS: Suit[] = [0, 1, 2, 3, 4, 5, 6];
-
-function SuitPicker({ label, value, onChange }: { label: string; value: Suit | null; onChange: (v: Suit) => void }) {
-  return (
-    <div className="space-y-1">
-      <p className="text-xs font-semibold text-slate-500">{label}</p>
-      <div className="flex flex-wrap gap-1">
-        {SUITS.map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => onChange(s)}
-            aria-pressed={value === s}
-            aria-label={`${label}: ${s}`}
-            className={`min-h-11 min-w-11 rounded-md border-2 text-sm font-semibold tabular-nums ${
-              value === s ? "border-amber-500 bg-amber-50" : "border-slate-300"
-            }`}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+function playableEnds(piece: Piece, state: GameState): End[] {
+  const { leftEnd, rightEnd } = state.board;
+  if (leftEnd === null && rightEnd === null) return ["left"];
+  const ends: End[] = [];
+  if (piece.a === leftEnd || piece.b === leftEnd) ends.push("left");
+  if (piece.a === rightEnd || piece.b === rightEnd) ends.push("right");
+  return ends;
 }
 
-export function TurnController({ state, onPlayOpponentPiece, onPass, onDraw, onUndo }: TurnControllerProps) {
-  const [a, setA] = useState<Suit | null>(null);
-  const [b, setB] = useState<Suit | null>(null);
-  const [end, setEnd] = useState<End>("left");
+function playerLabel(state: GameState, playerId: number): string {
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) return `Jogador ${playerId}`;
+  if (player.role === "user") return "Você";
+  if (player.role === "partner") return "Parceiro";
+  return `Adversário ${player.id}`;
+}
+
+export function TurnController({
+  state,
+  candidates,
+  surePass,
+  onPlayPiece,
+  onPass,
+  onDraw,
+  onUndo,
+}: TurnControllerProps) {
+  const [pendingPiece, setPendingPiece] = useState<Piece | null>(null);
 
   const currentPlayer = state.players[state.currentPlayerIndex];
   const isUserTurn = currentPlayer?.role === "user";
   const mustDraw = state.config.boneyardEnabled && state.boneyardRemaining > 0;
 
-  function handleConfirmPlay() {
-    if (a === null || b === null) return;
-    onPlayOpponentPiece(a, b, end);
-    setA(null);
-    setB(null);
+  function choosePiece(piece: Piece) {
+    const ends = playableEnds(piece, state);
+    if (ends.length === 1) {
+      onPlayPiece(piece.id, ends[0]);
+      setPendingPiece(null);
+      return;
+    }
+    setPendingPiece(piece);
+  }
+
+  function chooseEnd(end: End) {
+    if (!pendingPiece) return;
+    onPlayPiece(pendingPiece.id, end);
+    setPendingPiece(null);
   }
 
   return (
-    <div className="space-y-4 rounded-xl border border-slate-200 p-4">
-      <div className="flex items-center justify-between">
-        <span className="font-semibold text-slate-800">
-          {isUserTurn ? "Sua vez" : `Vez de: jogador ${currentPlayer?.id}`}
-        </span>
+    <section className="space-y-4 rounded-xl border border-slate-200 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-semibold text-slate-800">
+          {isUserTurn ? "Sua vez" : `Vez de ${currentPlayer ? playerLabel(state, currentPlayer.id) : "—"}`}
+        </h2>
         <button
           type="button"
           onClick={onUndo}
@@ -77,60 +88,86 @@ export function TurnController({ state, onPlayOpponentPiece, onPass, onDraw, onU
         </p>
       )}
 
-      {!isUserTurn && (
+      {!isUserTurn && currentPlayer && (
         <div className="space-y-3">
-          <p className="text-sm text-slate-600">Registrar jogada deste jogador:</p>
-          <div className="flex flex-wrap items-start gap-4">
-            <SuitPicker label="Naipe A" value={a} onChange={setA} />
-            <SuitPicker label="Naipe B" value={b} onChange={setB} />
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-slate-500">Ponta</p>
-              <div className="flex gap-2">
-                {(["left", "right"] as const).map((e) => (
-                  <button
-                    key={e}
-                    type="button"
-                    onClick={() => setEnd(e)}
-                    aria-pressed={end === e}
-                    className={`min-h-11 rounded-lg border-2 px-3 py-2 font-semibold ${
-                      end === e ? "border-amber-500 bg-amber-50" : "border-slate-300"
-                    }`}
-                  >
-                    {e === "left" ? "Esquerda" : "Direita"}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={handleConfirmPlay}
-              disabled={a === null || b === null}
-              className="min-h-11 rounded-lg bg-amber-700 px-4 py-2 font-semibold text-white hover:bg-amber-800 disabled:pointer-events-none disabled:opacity-40"
-            >
-              Confirmar jogada
-            </button>
-            {mustDraw ? (
-              <button
-                type="button"
-                onClick={onDraw}
-                className="min-h-11 rounded-lg border-2 border-slate-300 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Comprou do monte
-              </button>
-            ) : (
+          {surePass ? (
+            <>
+              <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-sm text-sky-900">
+                Nenhuma peça que encaixe nas pontas {state.board.leftEnd} e {state.board.rightEnd} ainda está em jogo —{" "}
+                {playerLabel(state, currentPlayer.id)} só pode passar.
+              </p>
               <button
                 type="button"
                 onClick={onPass}
-                className="min-h-11 rounded-lg border-2 border-slate-300 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                className="min-h-11 rounded-lg bg-amber-700 px-4 py-2 font-semibold text-white hover:bg-amber-800"
               >
                 Passou a vez
               </button>
-            )}
-          </div>
+            </>
+          ) : pendingPiece ? (
+            <>
+              <p className="text-sm text-slate-600">Em qual ponta essa peça foi jogada?</p>
+              <div className="flex flex-wrap items-center gap-3">
+                <DominoTile piece={pendingPiece} size="sm" selected />
+                {playableEnds(pendingPiece, state).map((end) => (
+                  <button
+                    key={end}
+                    type="button"
+                    onClick={() => chooseEnd(end)}
+                    className="min-h-11 rounded-lg border-2 border-amber-500 bg-amber-50 px-4 py-2 font-semibold text-amber-900 hover:bg-amber-100"
+                  >
+                    {end === "left" ? `Esquerda (${state.board.leftEnd})` : `Direita (${state.board.rightEnd})`}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setPendingPiece(null)}
+                  className="min-h-11 rounded-lg border-2 border-slate-300 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-slate-600">
+                Qual peça {playerLabel(state, currentPlayer.id)} jogou?{" "}
+                <span className="text-slate-400">
+                  ({candidates.length} possíve{candidates.length === 1 ? "l" : "is"})
+                </span>
+              </p>
+              {candidates.length === 0 ? (
+                <p className="text-sm text-slate-500">Nenhuma peça possível — registre um passe ou uma compra.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {candidates.map((piece) => (
+                    <DominoTile key={piece.id} piece={piece} size="sm" onClick={() => choosePiece(piece)} />
+                  ))}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-3 pt-1">
+                {mustDraw ? (
+                  <button
+                    type="button"
+                    onClick={onDraw}
+                    className="min-h-11 rounded-lg border-2 border-slate-300 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Comprou do monte
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onPass}
+                    className="min-h-11 rounded-lg border-2 border-slate-300 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Passou a vez
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
-    </div>
+    </section>
   );
 }
