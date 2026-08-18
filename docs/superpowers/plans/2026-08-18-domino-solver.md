@@ -2456,7 +2456,12 @@ function RevealRow({
 
   return (
     <div className="rounded-lg border border-slate-200 p-3">
-      <button type="button" onClick={onToggle} className="min-h-11 w-full text-left text-sm font-semibold text-slate-700">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={revealed}
+        className="min-h-11 w-full text-left text-sm font-semibold text-slate-700"
+      >
         Jogador {player.id} {revealedCount > 0 ? `— ${revealedCount} peça(s) revelada(s)` : "— não revelado"}
       </button>
       {revealed && (
@@ -2569,6 +2574,7 @@ export function RoundEndPanel({ state, onFinishRound, onNewRound }: RoundEndPane
               key={p.id}
               type="button"
               onClick={() => setWinnerId(p.id)}
+              aria-pressed={winnerId === p.id}
               className={`min-h-11 rounded-lg border-2 px-3 py-2 font-semibold ${
                 winnerId === p.id ? "border-amber-500 bg-amber-50" : "border-slate-300"
               }`}
