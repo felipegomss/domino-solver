@@ -356,6 +356,35 @@ describe("rankMoves", () => {
       const [move] = rankMoves(state);
       expect(move.reasoning.some((r) => r.includes("cruzada"))).toBe(true);
     });
+
+    it("regression: a lá-e-lô finish outscores a carroça finish (no double-discard leak into finishing moves)", () => {
+      // Same board (ends 4 and 5); the hand holds both the bridging 4-5
+      // (lá-e-lô, tier 2) and the double 5-5 (carroça, tier 1). Either bats.
+      const state = makeState({
+        board: { sequence: [{ piece: { id: "4-5", a: 4, b: 5 }, leftValue: 4, rightValue: 5 }], leftEnd: 4, rightEnd: 5 },
+        players: [
+          makePlayer({
+            id: 0,
+            role: "user",
+            hand: [
+              { id: "4-5", a: 4, b: 5 },
+              { id: "5-5", a: 5, b: 5 },
+            ],
+          }),
+        ],
+      });
+      // Neither is truly "finishing" with 2 pieces in hand — shrink to 1 piece
+      // per scenario so each move IS the batida, then compare scores.
+      const laELoState = { ...state, players: [{ ...state.players[0], hand: [{ id: "4-5", a: 4 as const, b: 5 as const }] }] };
+      const carrocaState = { ...state, players: [{ ...state.players[0], hand: [{ id: "5-5", a: 5 as const, b: 5 as const }] }] };
+      const bestLaELo = rankMoves(laELoState)[0];
+      const bestCarroca = rankMoves(carrocaState)[0];
+      expect(bestLaELo.reasoning.some((r) => r.includes("lá-e-lô"))).toBe(true);
+      expect(bestCarroca.reasoning.some((r) => r.includes("carroça"))).toBe(true);
+      expect(bestLaELo.score).toBeGreaterThan(bestCarroca.score);
+      // And the finishing carroça must not carry the hand-management bonus.
+      expect(bestCarroca.reasoning.some((r) => r.includes("Alivia"))).toBe(false);
+    });
   });
 
   describe("la-e-lo setup", () => {

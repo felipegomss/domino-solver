@@ -180,12 +180,15 @@ export function rankMoves(state: GameState): RankedMove[] {
             );
           }
         }
-      }
 
-      // 6. Double discard — doubles are single-suit, risky to hold.
-      if (isDouble(piece)) {
-        score += WEIGHTS.DOUBLE_DISCARD;
-        reasoning.push(`Alivia uma dobra pesada da mão (+${WEIGHTS.DOUBLE_DISCARD})`);
+        // 6. Double discard — doubles are single-suit, risky to hold. Only
+        // meaningful while the game continues: on a finishing move the hand
+        // empties and this bonus would corrupt the batida-tier ordering
+        // (carroça finishes are doubles, lá-e-lô finishes never are).
+        if (isDouble(piece)) {
+          score += WEIGHTS.DOUBLE_DISCARD;
+          reasoning.push(`Alivia uma dobra pesada da mão (+${WEIGHTS.DOUBLE_DISCARD})`);
+        }
       }
 
       if (reasoning.length === 0) {
