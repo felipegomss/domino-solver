@@ -58,46 +58,58 @@ Configurável no Setup Wizard:
   vazio — o comportamento é idêntico a "sem monte" automaticamente, sem
   exigir escolha do usuário nesse caso.
 
-## Pontuação em Fim de Rodada
+## Fim de Rodada (revisado — Rodada 3, correções do usuário)
+
+> Histórico: a primeira versão deste documento definia pontuação por soma de
+> pips com revelação opcional de mãos, lá-e-lô como "pontas iguais antes da
+> batida" e bucha como "bater antes de o adversário jogar qualquer peça".
+> Todas as três definições foram corrigidas pelo usuário após jogo real e a
+> seção abaixo é a que vale.
 
 Duas formas de terminar uma rodada:
 
-1. **Batida** (simples ou do parceiro): um jogador fica sem peças.
+1. **Batida**: um jogador fica sem peças. O vencedor é detectado
+   automaticamente (é quem zerou a mão — o app já sabe).
 2. **Trancamento**: todos os jogadores em sequência passam (com monte já
-   vazio ou desabilitado) e ninguém consegue jogar.
+   vazio ou desabilitado). Vence quem tiver **menos peças na mão**; empate
+   no mínimo → rodada empatada, sem vencedor.
 
-Como as mãos dos adversários nunca são 100% conhecidas pelo app, ao fim da
-rodada a UI oferece "Revelar mãos": o usuário pode digitar as peças finais de
-cada oponente (como acontece na mesa real, quando os perdedores mostram a
-mão) para pontuação exata. Se o usuário pular essa etapa, o app estima a
-pontuação distribuindo o peso das peças ainda desconhecidas proporcionalmente
-entre os jogadores que ainda as poderiam ter (excluindo naipes que a matriz
-de `voidSuits` já eliminou para cada jogador).
+**Não há placar**: nenhuma contagem de pontos por pips, nenhuma revelação de
+mãos, nenhum acumulado entre rodadas. Cada rodada registra apenas quem venceu
+e o tipo da batida. O vencedor inicia a rodada seguinte (empate → mantém o
+`startingPlayer` configurado).
 
-Placar é cumulativo entre rodadas dentro da sessão (não há alvo de pontos
-fixo — o usuário decide quando a partida acaba).
+### Tipos de Batida
 
-### Bônus de Pontuação: Lá-e-Lô e Bucha
+Detectados a partir das pontas da mesa imediatamente ANTES da jogada final e
+da peça que bateu:
 
-Duas condições especiais de batida valem pontuação em dobro (multiplicador
-aplicado sobre os pontos base da rodada, cumulativo se as duas ocorrerem
-juntas — dobro cada, ou seja ×4 no total):
+- **Simples**: qualquer batida que não se enquadre nas abaixo.
+- **Carroça (bucha/carreto)**: a peça final é uma dobra (ex.: bater com 4-4).
+- **Lá-e-lô (lasquinê)**: as duas pontas têm valores DIFERENTES (x, y) e a
+  peça final é exatamente x-y — ela fecharia qualquer uma das duas pontas.
+  Pontas (5,5) batendo com 2-5 NÃO é lá-e-lô (caso reportado pelo usuário).
+- **Cruzada**: as duas pontas têm o mesmo valor v e a peça final é a carroça
+  v-v — a batida mais forte.
 
-- **Lá-e-lô** (lasquenete/lasquinê): a peça que bate o jogo é jogada quando
-  as duas pontas abertas já tinham o mesmo valor — ou seja, o vencedor
-  "podia bater de lá ou de lô" indiferentemente. Detectado comparando as
-  pontas da mesa imediatamente antes da jogada vencedora.
-- **Bucha** (carreto): o lado vencedor bate a partida enquanto nenhum
-  jogador do lado adversário jogou qualquer peça ainda (mão adversária
-  intacta desde a distribuição). Detectado verificando se nenhum jogador
-  adversário tem uma jogada (`play`) no histórico até aquele momento.
+O solver usa os tipos apenas como desempate de estilo entre jogadas que já
+batem o jogo (bater vence a rodada — domina qualquer outra heurística).
 
-O solver ganha duas heurísticas adicionais para favorecer essas condições
-quando forem alcançáveis sem comprometer as demais heurísticas de segurança:
-bônus ao identificar que a jogada atual É a jogada final em condição de
-lá-e-lô ou bucha, e um bônus menor e especulativo quando a jogada iguala as
-pontas e o usuário ainda guarda peça(s) naquele naipe (abrindo caminho para
-uma futura batida de lá-e-lô).
+### Heurística central do solver: mobilidade do adversário
+
+Correção estratégica da Rodada 3 (análise do usuário confirmada): a avaliação
+de cada jogada passa a computar, via inferência exata sobre o pool de peças
+desconhecidas, **quantas peças o próximo adversário poderia jogar** nas duas
+pontas resultantes (descontando naipes em que ele é comprovadamente void, por
+passe ou por contagem — ex.: o usuário segura todos os 6 restantes).
+Penalidade proporcional à mobilidade dele; bônus alto quando chega a zero
+(passe garantido). Isso substitui o antigo "castigo de passe" (que só olhava
+voids declarados por passe e apenas a ponta alterada) e captura jogadas como
+"manter a ponta 6 morta e jogar no branco". O bônus de preparação de lá-e-lô
+passa a valer apenas quando o usuário ainda segura a peça-ponte das duas
+pontas distintas resultantes. Heurísticas de peso de peça (descarte de
+pesadas) saem — sem pontuação por pips, peso não afeta o resultado; carroças
+seguem penalizadas por inflexibilidade.
 
 ## Tipos Centrais (`engine/types.ts`)
 
@@ -109,7 +121,8 @@ uma futura batida de lá-e-lô).
 - `PlayerState = { id: number; role: PlayerRole; team: 'A' | 'B' | null; hand?: Piece[]; handSize: number; voidSuits: Set<Suit>; suitPlayCount: Record<Suit, number> }`
 - `GameConfig = { numPlayers: 2|3|4; mode: 'individual'|'duplas'; direction: 'cw'|'ccw'; handSize: number; boneyardEnabled: boolean; startingPlayer: number }`
 - `Move = { type: 'play'; playerId: number; pieceId: string; end: End } | { type: 'pass'; playerId: number; drewFirst: boolean } | { type: 'draw'; playerId: number; count: number }`
-- `GameState = { phase: 'setup'|'playing'|'round-end'|'finished'; config: GameConfig; players: PlayerState[]; board: Board; boneyard: { remaining: number }; unknownPieceIds: Set<string>; currentPlayerIndex: number; history: Move[]; scores: { A: number; B: number } | Record<number, number>; roundNumber: number }`
+- `BatidaType = 'simples' | 'carroca' | 'la-e-lo' | 'cruzada'` (Rodada 3)
+- `GameState = { phase: 'setup'|'playing'|'round-end'; config: GameConfig; players: PlayerState[]; board: Board; boneyardRemaining: number; currentPlayerIndex: number; history: Move[]; roundNumber: number; error: string | null; roundEndReason: 'batida'|'lock'|null; batidaType: BatidaType | null; passStreak: number; lastWinnerId: number | null }` — sem `scores` e sem fase `finished` desde a Rodada 3 (sem placar; vencedor automático)
 
 ## Engine
 
@@ -122,34 +135,40 @@ Gera as 28 peças duplo-6 (`id` = `"a-b"`, `a<=b`).
 - `registerPlay(state, playerId, piece)`: incrementa `suitPlayCount` para os
   naipes da peça jogada (sinal de preferência de naipe).
 - `getUnknownPieces(state)`: `deck − mão do usuário − peças na mesa`.
-- `estimateSuitLikelihood(state, playerId, suit)`: heurística simples —
-  zero se `suit ∈ voidSuits[playerId]`; caso contrário, proporcional ao
-  `handSize` do jogador sobre a soma de `handSize` de todos os jogadores
-  não-void nesse naipe, ponderada pela fração de peças desconhecidas que
-  contêm esse naipe.
+- `filterByPlayableEnds(pool, leftEnd, rightEnd, voidSuits)`: filtro
+  compartilhado de encaixe nas pontas (Rodada 3).
+- `getCandidatePieces(state, playerId)`: peças que o jogador poderia
+  legalmente ter jogado agora — pool desconhecido (ou a própria mão, se
+  conhecida) filtrado pelas pontas e pelos voids dele (Rodada 2).
+- `willSurelyPass(state, playerId)`: prova de passe — nenhum candidato e
+  monte vazio/desabilitado (Rodada 2).
 
 ### `solver.ts`
 `rankMoves(state, userHand): RankedMove[]` onde
 `RankedMove = { piece: Piece; end: End; score: number; reasoning: string[] }`.
 
-Para cada jogada válida, soma pesos das seguintes heurísticas (pesos
-ajustáveis como constantes no topo do arquivo):
+Para cada jogada válida (pesos como constantes no topo do arquivo),
+conjunto revisado na Rodada 3:
 
-1. **Castigo de passe**: bônus se a ponta resultante tem naipe em que o(s)
-   próximo(s) adversário(s) na ordem de turno já é(são) void.
-2. **Sinergia de dupla** (modo duplas): penalidade por fechar um naipe em
-   que o parceiro tem alta `suitPlayCount` (naipe "forte" dele); penalidade
-   por abrir uma ponta em naipe que o parceiro já é void mas o adversário
-   seguinte não.
-3. **Controle/flexibilidade**: bônus proporcional a quantas peças restantes
-   na mão do usuário (após a jogada hipotética) ainda contêm o(s) novo(s)
-   valor(es) de ponta.
-4. **Alívio de peso**: bônus por descartar dobras e peças de soma alta de
-   pontos, maior quanto mais peças pesadas ainda restam na mão.
-5. **Incentivo a trancamento**: se a soma de pontos da mão do usuário (mão
-   conhecida) for menor que a estimativa média das mãos adversárias, bônus
-   para jogadas que aumentam a chance de trancamento (pontas em naipes onde
-   múltiplos jogadores já mostraram void).
+1. **Batida** (domina tudo): se é a última peça do usuário, bônus enorme +
+   desempate por tipo (cruzada > lá-e-lô > carroça > simples), com a mesma
+   detecção de tipo do reducer.
+2. **Mobilidade do adversário** (núcleo novo): simula as pontas resultantes
+   e conta exatamente, via `filterByPlayableEnds` sobre o pool desconhecido,
+   quantas peças o próximo adversário poderia jogar. Penalidade proporcional;
+   bônus alto quando zero (passe garantido). Substitui o antigo castigo de
+   passe e o incentivo a trancamento.
+3. **Sinergia de dupla** (modo duplas): mantida — penalidade por fechar
+   naipe forte do parceiro e por deixar ponta que só o adversário aproveita.
+4. **Flexibilidade própria**: bônus por peça restante da mão jogável nas
+   DUAS pontas resultantes (não só na alterada).
+5. **Descarte de carroça**: mantido (dobra é peça de encaixe único).
+6. **Preparação de lá-e-lô**: bônus apenas quando as pontas resultantes são
+   distintas (x, y) e o usuário ainda segura exatamente a peça x-y.
+
+Removidos na Rodada 3: castigo de passe (subsumido pela mobilidade), alívio
+de peso/pesadas (sem pontuação por pips, peso não afeta o resultado) e
+incentivo a trancamento por estimativa de pontos.
 
 Retorna lista ordenada por `score` desc, cada uma com `reasoning: string[]`
 em PT-BR explicando quais heurísticas contribuíram.
@@ -165,10 +184,12 @@ em PT-BR explicando quais heurísticas contribuíram.
 - `UNDO` — restaura snapshot completo do estado anterior (histórico de
   snapshots, não de ações inversas — o estado é pequeno, snapshot é mais
   simples e à prova de erros de "undo" mal implementado).
-- `REVEAL_HANDS({ hands: Record<playerId, Piece[]> })` — pontuação exata.
-- `FINISH_ROUND({ estimated: boolean })` — fecha rodada com pontuação
-  estimada se o usuário pular a revelação.
-- `NEW_ROUND()` — mantém placar cumulativo, reseta mesa/mãos.
+- `NEW_ROUND()` — reseta mesa/mãos; o vencedor da rodada anterior inicia
+  (empate no trancamento → volta ao `startingPlayer` configurado).
+
+`REVEAL_HANDS` e `FINISH_ROUND` foram removidos na Rodada 3 junto com o
+placar: a batida define o vencedor automaticamente e o trancamento decide
+por menor quantidade de peças na mão.
 
 Ordem de turnos calculada a partir de `direction`, `numPlayers` e
 `startingPlayer`.
@@ -187,13 +208,15 @@ Ordem de turnos calculada a partir de `direction`, `numPlayers` e
 ## Componentes (UI)
 
 - `SetupWizard.tsx` — passos: nº jogadores → modo (individual/duplas) →
-  sentido → pedras iniciais → monte (se aplicável) → quem inicia → seleção
-  da mão do usuário.
+  sentido → pedras iniciais → monte (se aplicável) → seleção da mão do
+  usuário → quem inicia (mão antes de quem-inicia desde a Rodada 2).
 - `BoardDisplay.tsx` — visualiza sequência de peças e pontas abertas,
   responsivo (scroll horizontal em telas pequenas).
 - `TurnController.tsx` — ações rápidas contextuais ao turno atual: para
-  oponentes/parceiro, seletor de peça (dois seletores de naipe 0-6) + ponta
-  + botão "Passou"; para o usuário, atalho para abrir `RecommendationList`.
+  oponentes/parceiro, seletor mostrando SOMENTE as peças que poderiam estar
+  em jogo (via `getCandidatePieces`), fluxo peça → ponta em dois cliques,
+  e modo passe-garantido via `willSurelyPass` (Rodada 2; substituiu os dois
+  seletores de naipe 0-6 originais).
 - `UserHand.tsx` — grade de peças do usuário, destaca jogáveis vs
   inválidas no turno atual.
 - `RecommendationList.tsx` — cards ranqueados, Top 1 com destaque visual
