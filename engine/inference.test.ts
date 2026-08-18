@@ -4,9 +4,11 @@ import {
   applySuitPlayed,
   computeRoundScore,
   estimateSuitLikelihood,
+  getCandidatePieces,
   getScoreKey,
   getUnknownPieces,
   registerPass,
+  willSurelyPass,
 } from "./inference";
 import { GameState, PlayerState } from "./types";
 
@@ -193,5 +195,135 @@ describe("computeRoundScore", () => {
     const result = computeRoundScore(state, 0, createDeck());
     expect(result.winnerKey).toBe("A");
     expect(result.points).toBe(13); // 6-6 + 0-1, partner's 5-5 excluded
+  });
+});
+
+describe("getCandidatePieces", () => {
+  it("returns only unaccounted-for pieces matching an open end", () => {
+    const state = makeState({
+      board: { sequence: [], leftEnd: 3, rightEnd: 5 },
+      players: [
+        makePlayer({ id: 0, role: "user", hand: [{ id: "0-0", a: 0, b: 0 }] }),
+        makePlayer({ id: 1, role: "opponent" }),
+      ],
+    });
+    const candidates = getCandidatePieces(state, 1, createDeck());
+    expect(candidates.every((p) => p.a === 3 || p.b === 3 || p.a === 5 || p.b === 5)).toBe(true);
+    expect(candidates.some((p) => p.id === "3-6")).toBe(true);
+    expect(candidates.some((p) => p.id === "5-6")).toBe(true);
+    expect(candidates.some((p) => p.id === "1-2")).toBe(false);
+  });
+
+  it("returns every unaccounted-for piece on an empty board", () => {
+    const state = makeState({
+      board: { sequence: [], leftEnd: null, rightEnd: null },
+      players: [
+        makePlayer({ id: 0, role: "user", hand: [{ id: "0-0", a: 0, b: 0 }] }),
+        makePlayer({ id: 1, role: "opponent" }),
+      ],
+    });
+    const candidates = getCandidatePieces(state, 1, createDeck());
+    const unknown = getUnknownPieces(state, createDeck());
+    expect(candidates).toHaveLength(unknown.length);
+  });
+
+  it("excludes pieces already in the user's known hand and already on the board", () => {
+    const state = makeState({
+      board: {
+        sequence: [{ piece: { id: "3-1", a: 1, b: 3 }, leftValue: 3, rightValue: 1 }],
+        leftEnd: 3,
+        rightEnd: 1,
+      },
+      players: [
+        makePlayer({ id: 0, role: "user", hand: [{ id: "3-3", a: 3, b: 3 }] }),
+        makePlayer({ id: 1, role: "opponent" }),
+      ],
+    });
+    const candidates = getCandidatePieces(state, 1, createDeck());
+    expect(candidates.some((p) => p.id === "3-3")).toBe(false);
+    expect(candidates.some((p) => p.id === "3-1")).toBe(false);
+  });
+
+  it("respects voidSuits: a player void in one open end only gets candidates for the other end", () => {
+    const state = makeState({
+      board: { sequence: [], leftEnd: 3, rightEnd: 5 },
+      players: [
+        makePlayer({ id: 0, role: "user", hand: [] }),
+        makePlayer({ id: 1, role: "opponent", voidSuits: [3] }),
+      ],
+    });
+    const candidates = getCandidatePieces(state, 1, createDeck());
+    expect(candidates.length).toBeGreaterThan(0);
+    expect(candidates.every((p) => p.a === 5 || p.b === 5)).toBe(true);
+  });
+
+  it("returns zero candidates for a player void in both open-end values", () => {
+    const state = makeState({
+      board: { sequence: [], leftEnd: 3, rightEnd: 5 },
+      players: [
+        makePlayer({ id: 0, role: "user", hand: [] }),
+        makePlayer({ id: 1, role: "opponent", voidSuits: [3, 5] }),
+      ],
+    });
+    const candidates = getCandidatePieces(state, 1, createDeck());
+    expect(candidates).toHaveLength(0);
+  });
+
+  it("returns an empty array when the playerId does not resolve to a player", () => {
+    const state = makeState({
+      board: { sequence: [], leftEnd: 3, rightEnd: 5 },
+      players: [makePlayer({ id: 0, role: "user", hand: [] })],
+    });
+    expect(getCandidatePieces(state, 99, createDeck())).toEqual([]);
+  });
+});
+
+describe("willSurelyPass", () => {
+  it("is true when the player is void in both open ends and the boneyard is empty", () => {
+    const state = makeState({
+      config: { ...makeState({}).config, boneyardEnabled: true },
+      boneyardRemaining: 0,
+      board: { sequence: [], leftEnd: 3, rightEnd: 5 },
+      players: [
+        makePlayer({ id: 0, role: "user", hand: [] }),
+        makePlayer({ id: 1, role: "opponent", voidSuits: [3, 5] }),
+      ],
+    });
+    expect(willSurelyPass(state, 1, createDeck())).toBe(true);
+  });
+
+  it("is false while the boneyard still has pieces, even with zero candidates", () => {
+    const state = makeState({
+      config: { ...makeState({}).config, boneyardEnabled: true },
+      boneyardRemaining: 3,
+      board: { sequence: [], leftEnd: 3, rightEnd: 5 },
+      players: [
+        makePlayer({ id: 0, role: "user", hand: [] }),
+        makePlayer({ id: 1, role: "opponent", voidSuits: [3, 5] }),
+      ],
+    });
+    expect(willSurelyPass(state, 1, createDeck())).toBe(false);
+  });
+
+  it("is false on an empty board", () => {
+    const state = makeState({
+      board: { sequence: [], leftEnd: null, rightEnd: null },
+      players: [
+        makePlayer({ id: 0, role: "user", hand: [] }),
+        makePlayer({ id: 1, role: "opponent", voidSuits: [0, 1, 2, 3, 4, 5, 6] }),
+      ],
+    });
+    expect(willSurelyPass(state, 1, createDeck())).toBe(false);
+  });
+
+  it("is false when the player still has candidate pieces", () => {
+    const state = makeState({
+      board: { sequence: [], leftEnd: 3, rightEnd: 5 },
+      players: [
+        makePlayer({ id: 0, role: "user", hand: [] }),
+        makePlayer({ id: 1, role: "opponent" }),
+      ],
+    });
+    expect(willSurelyPass(state, 1, createDeck())).toBe(false);
   });
 });

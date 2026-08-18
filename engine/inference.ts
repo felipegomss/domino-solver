@@ -50,6 +50,41 @@ export function estimateSuitLikelihood(
   return Math.min(1, player.handSize / totalEligibleHandSize);
 }
 
+/**
+ * Pieces a given player could legally play right now, from the app's point of
+ * view: still unaccounted for (not in a known hand, not on the table), and
+ * matching an open end that this player has not shown themselves void in.
+ * On an empty board every unaccounted-for piece qualifies.
+ */
+export function getCandidatePieces(state: GameState, playerId: number, deck: Piece[]): Piece[] {
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) return [];
+
+  const unknown = getUnknownPieces(state, deck);
+  const { leftEnd, rightEnd } = state.board;
+  if (leftEnd === null && rightEnd === null) return unknown;
+
+  const openEnds = Array.from(new Set([leftEnd, rightEnd].filter((v): v is Suit => v !== null)));
+  const playableEnds = openEnds.filter((v) => !player.voidSuits.includes(v));
+  if (playableEnds.length === 0) return [];
+
+  return unknown.filter((p) => playableEnds.some((v) => p.a === v || p.b === v));
+}
+
+/**
+ * True when the app can prove this player has no legal move — every remaining
+ * unaccounted-for piece either does not match an open end, or matches only a
+ * suit this player is known to be void in. Always false while the boneyard
+ * still has pieces (they would draw instead of passing), and false on an
+ * empty board.
+ */
+export function willSurelyPass(state: GameState, playerId: number, deck: Piece[]): boolean {
+  const { leftEnd, rightEnd } = state.board;
+  if (leftEnd === null && rightEnd === null) return false;
+  if (state.config.boneyardEnabled && state.boneyardRemaining > 0) return false;
+  return getCandidatePieces(state, playerId, deck).length === 0;
+}
+
 export function getScoreKey(state: GameState, player: PlayerState): string {
   return state.config.mode === "duplas" && player.team ? player.team : String(player.id);
 }

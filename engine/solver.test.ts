@@ -350,6 +350,46 @@ describe("rankMoves", () => {
     expect(move.reasoning.some((r) => r.includes("Descarta peça pesada"))).toBe(false);
   });
 
+  it("scales the bucha bonus by the points at stake in the opposing hands", () => {
+    const heavyState = makeState({
+      board: { sequence: [{ piece: { id: "3-3", a: 3, b: 3 }, leftValue: 3, rightValue: 3 }], leftEnd: 3, rightEnd: 3 },
+      history: [],
+      players: [
+        makePlayer({ id: 0, role: "user", hand: [{ id: "3-4", a: 3, b: 4 }] }),
+        makePlayer({
+          id: 1,
+          role: "opponent",
+          hand: [
+            { id: "6-6", a: 6, b: 6 },
+            { id: "5-6", a: 5, b: 6 },
+          ],
+          handSize: 2,
+        }),
+      ],
+    });
+    const lightState = makeState({
+      board: { sequence: [{ piece: { id: "3-3", a: 3, b: 3 }, leftValue: 3, rightValue: 3 }], leftEnd: 3, rightEnd: 3 },
+      history: [],
+      players: [
+        makePlayer({ id: 0, role: "user", hand: [{ id: "3-4", a: 3, b: 4 }] }),
+        makePlayer({
+          id: 1,
+          role: "opponent",
+          hand: [
+            { id: "0-0", a: 0, b: 0 },
+            { id: "0-1", a: 0, b: 1 },
+          ],
+          handSize: 2,
+        }),
+      ],
+    });
+    const [heavyMove] = rankMoves(heavyState);
+    const [lightMove] = rankMoves(lightState);
+    expect(heavyMove.reasoning.some((r) => r.includes("bucha"))).toBe(true);
+    expect(lightMove.reasoning.some((r) => r.includes("bucha"))).toBe(true);
+    expect(heavyMove.score).toBeGreaterThan(lightMove.score);
+  });
+
   it("breaks score ties by preferring the higher pip-sum piece", () => {
     const state = makeState({
       players: [

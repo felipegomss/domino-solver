@@ -17,8 +17,9 @@ const WEIGHTS = {
   DOUBLE_DISCARD: 8,
   PIP_RELIEF: 1,
   LOCK_INCENTIVE: 6,
-  LA_E_LO_FINISH: 25,
-  BUCHA_FINISH: 25,
+  LA_E_LO_FINISH_BASE: 12,
+  BUCHA_FINISH_BASE: 12,
+  STAKE_FACTOR: 0.5,
   LA_E_LO_SETUP: 10,
 };
 const STRONG_SUIT_THRESHOLD = 2;
@@ -125,15 +126,26 @@ export function rankMoves(state: GameState): RankedMove[] {
 
         const isFinishingMove = user.hand.length === 1;
         if (isFinishingMove) {
+          const rivals = opponentsOf(state, user.id, user.team);
+          const stake = rivals.reduce(
+            (sum, r) => sum + (r.hand ? handPipSum(r.hand) : r.handSize * avgUnknownPip),
+            0
+          );
+
           const boardEndsWereEqual = leftEnd === rightEnd;
           if (boardEndsWereEqual) {
-            score += WEIGHTS.LA_E_LO_FINISH;
-            reasoning.push(`Bate jogando de lá-e-lô — pontuação da rodada dobra (+${WEIGHTS.LA_E_LO_FINISH})`);
+            const bonus = WEIGHTS.LA_E_LO_FINISH_BASE + Math.round(stake * WEIGHTS.STAKE_FACTOR);
+            score += bonus;
+            reasoning.push(
+              `Bate jogando de lá-e-lô — dobra a rodada, ~${Math.round(stake)} pontos em jogo (+${bonus})`
+            );
           }
-          const rivals = opponentsOf(state, user.id, user.team);
           if (rivals.length > 0 && rivals.every((r) => !hasPlayedYet(state, r.id))) {
-            score += WEIGHTS.BUCHA_FINISH;
-            reasoning.push(`Bate de bucha — adversários ainda não jogaram nenhuma peça, pontuação dobra (+${WEIGHTS.BUCHA_FINISH})`);
+            const bonus = WEIGHTS.BUCHA_FINISH_BASE + Math.round(stake * WEIGHTS.STAKE_FACTOR);
+            score += bonus;
+            reasoning.push(
+              `Bate de bucha — adversários ainda não jogaram, dobra a rodada, ~${Math.round(stake)} pontos em jogo (+${bonus})`
+            );
           }
         } else {
           const untouchedEnd = end === "left" ? rightEnd : leftEnd;
