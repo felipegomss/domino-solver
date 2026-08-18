@@ -2236,6 +2236,8 @@ function SuitPicker({ label, value, onChange }: { label: string; value: Suit | n
             key={s}
             type="button"
             onClick={() => onChange(s)}
+            aria-pressed={value === s}
+            aria-label={`${label}: ${s}`}
             className={`min-h-11 min-w-11 rounded-md border-2 text-sm font-semibold tabular-nums ${
               value === s ? "border-amber-500 bg-amber-50" : "border-slate-300"
             }`}
@@ -2301,6 +2303,7 @@ export function TurnController({ state, onPlayOpponentPiece, onPass, onDraw, onU
                     key={e}
                     type="button"
                     onClick={() => setEnd(e)}
+                    aria-pressed={end === e}
                     className={`min-h-11 rounded-lg border-2 px-3 py-2 font-semibold ${
                       end === e ? "border-amber-500 bg-amber-50" : "border-slate-300"
                     }`}
