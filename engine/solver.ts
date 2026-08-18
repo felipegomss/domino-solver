@@ -23,6 +23,7 @@ const WEIGHTS = {
 };
 const STRONG_SUIT_THRESHOLD = 2;
 const HEAVY_PIP_THRESHOLD = 8;
+const DEFAULT_AVG_PIP = 3.5;
 
 function opponentsOf(state: GameState, playerId: number, team: Team | null): PlayerState[] {
   return state.players.filter((p) => p.id !== playerId && (state.config.mode !== "duplas" || p.team !== team));
@@ -60,7 +61,7 @@ export function rankMoves(state: GameState): RankedMove[] {
 
   const heavyPiecesRemaining = user.hand.filter((p) => pipSum(p) >= HEAVY_PIP_THRESHOLD || isDouble(p)).length;
   const userPipTotal = handPipSum(user.hand);
-  const avgUnknownPip = unknown.length > 0 ? handPipSum(unknown) / unknown.length : 3.5;
+  const avgUnknownPip = unknown.length > 0 ? handPipSum(unknown) / unknown.length : DEFAULT_AVG_PIP;
   const opponents = state.players.filter((p) => p.role === "opponent");
   const estimatedOpponentAvg =
     opponents.length > 0
@@ -137,10 +138,7 @@ export function rankMoves(state: GameState): RankedMove[] {
         } else {
           const untouchedEnd = end === "left" ? rightEnd : leftEnd;
           if (untouchedEnd !== null && resultingValue === untouchedEnd) {
-            const remainingWithThatValue = user.hand.filter(
-              (p) => p.id !== piece.id && (p.a === resultingValue || p.b === resultingValue)
-            ).length;
-            if (remainingWithThatValue > 0) {
+            if (remainingWithValue > 0) {
               score += WEIGHTS.LA_E_LO_SETUP;
               reasoning.push(
                 `Iguala as pontas e mantém peça(s) no naipe ${resultingValue} — abre caminho para bater de Lá-e-Lô (+${WEIGHTS.LA_E_LO_SETUP})`

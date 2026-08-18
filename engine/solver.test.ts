@@ -204,4 +204,168 @@ describe("rankMoves", () => {
     const setupMove = moves.find((m) => m.piece.id === "3-5" && m.end === "right")!;
     expect(setupMove.reasoning.some((r) => r.includes("Lá-e-Lô"))).toBe(true);
   });
+
+  it("rewards flexibility when a spare piece can extend the resulting suit", () => {
+    const withSpare = makeState({
+      board: { sequence: [{ piece: { id: "3-3", a: 3, b: 3 }, leftValue: 3, rightValue: 3 }], leftEnd: 3, rightEnd: 3 },
+      players: [
+        makePlayer({
+          id: 0,
+          role: "user",
+          hand: [
+            { id: "3-4", a: 3, b: 4 },
+            { id: "4-5", a: 4, b: 5 },
+          ],
+        }),
+      ],
+    });
+    const withoutSpare = makeState({
+      board: { sequence: [{ piece: { id: "3-3", a: 3, b: 3 }, leftValue: 3, rightValue: 3 }], leftEnd: 3, rightEnd: 3 },
+      players: [
+        makePlayer({
+          id: 0,
+          role: "user",
+          hand: [
+            { id: "3-4", a: 3, b: 4 },
+            { id: "0-1", a: 0, b: 1 },
+          ],
+        }),
+      ],
+    });
+    const spareMove = rankMoves(withSpare).find((m) => m.piece.id === "3-4" && m.end === "left")!;
+    const noSpareMove = rankMoves(withoutSpare).find((m) => m.piece.id === "3-4" && m.end === "left")!;
+    expect(spareMove.reasoning.some((r) => r.includes("sobressalente"))).toBe(true);
+    expect(spareMove.score).toBeGreaterThan(noSpareMove.score);
+  });
+
+  it("rewards moves that help lock an opponent out while the user's team is light on pips", () => {
+    const state = makeState({
+      board: { sequence: [{ piece: { id: "3-3", a: 3, b: 3 }, leftValue: 3, rightValue: 3 }], leftEnd: 3, rightEnd: 3 },
+      players: [
+        makePlayer({
+          id: 0,
+          role: "user",
+          hand: [
+            { id: "3-4", a: 3, b: 4 },
+            { id: "0-1", a: 0, b: 1 },
+          ],
+        }),
+        makePlayer({ id: 1, role: "opponent", voidSuits: [] }),
+        makePlayer({ id: 2, role: "opponent", voidSuits: [4] }),
+        makePlayer({ id: 3, role: "opponent", voidSuits: [] }),
+      ],
+    });
+    const move = rankMoves(state).find((m) => m.piece.id === "3-4" && m.end === "left")!;
+    expect(move.reasoning.some((r) => r.includes("trancamento"))).toBe(true);
+    expect(move.score).toBeGreaterThan(0);
+  });
+
+  it("penalizes isolating the partner when a move voids them without also voiding the next opponent, in duplas mode", () => {
+    const isolating = makeState({
+      config: { ...makeState({}).config, mode: "duplas" },
+      board: { sequence: [{ piece: { id: "3-3", a: 3, b: 3 }, leftValue: 3, rightValue: 3 }], leftEnd: 3, rightEnd: 3 },
+      players: [
+        makePlayer({
+          id: 0,
+          role: "user",
+          team: "A",
+          hand: [
+            { id: "3-4", a: 3, b: 4 },
+            { id: "0-1", a: 0, b: 1 },
+          ],
+        }),
+        makePlayer({ id: 1, role: "opponent", team: "B", voidSuits: [] }),
+        makePlayer({ id: 2, role: "partner", team: "A", voidSuits: [4] }),
+        makePlayer({ id: 3, role: "opponent", team: "B", voidSuits: [] }),
+      ],
+    });
+    const neutral = makeState({
+      config: { ...makeState({}).config, mode: "duplas" },
+      board: { sequence: [{ piece: { id: "3-3", a: 3, b: 3 }, leftValue: 3, rightValue: 3 }], leftEnd: 3, rightEnd: 3 },
+      players: [
+        makePlayer({
+          id: 0,
+          role: "user",
+          team: "A",
+          hand: [
+            { id: "3-4", a: 3, b: 4 },
+            { id: "0-1", a: 0, b: 1 },
+          ],
+        }),
+        makePlayer({ id: 1, role: "opponent", team: "B", voidSuits: [] }),
+        makePlayer({ id: 2, role: "partner", team: "A", voidSuits: [] }),
+        makePlayer({ id: 3, role: "opponent", team: "B", voidSuits: [] }),
+      ],
+    });
+    const isolateMove = rankMoves(isolating).find((m) => m.piece.id === "3-4" && m.end === "left")!;
+    const neutralMove = rankMoves(neutral).find((m) => m.piece.id === "3-4" && m.end === "left")!;
+    expect(isolateMove.reasoning.some((r) => r.includes("isolando"))).toBe(true);
+    expect(isolateMove.score).toBeLessThan(neutralMove.score);
+  });
+
+  it("rewards discarding a double regardless of other factors", () => {
+    const doubleState = makeState({
+      players: [makePlayer({ id: 0, role: "user", hand: [{ id: "2-2", a: 2, b: 2 }] })],
+    });
+    const nonDoubleState = makeState({
+      players: [makePlayer({ id: 0, role: "user", hand: [{ id: "2-5", a: 2, b: 5 }] })],
+    });
+    const [doubleMove] = rankMoves(doubleState);
+    const [nonDoubleMove] = rankMoves(nonDoubleState);
+    expect(doubleMove.reasoning.some((r) => r.includes("dobra pesada"))).toBe(true);
+    expect(doubleMove.score).toBeGreaterThan(nonDoubleMove.score);
+  });
+
+  it("rewards pip relief for a heavy piece when another heavy piece remains in hand", () => {
+    const state = makeState({
+      players: [
+        makePlayer({
+          id: 0,
+          role: "user",
+          hand: [
+            { id: "5-6", a: 5, b: 6 },
+            { id: "4-6", a: 4, b: 6 },
+          ],
+        }),
+      ],
+    });
+    const move = rankMoves(state).find((m) => m.piece.id === "5-6")!;
+    expect(move.reasoning.some((r) => r.includes("Descarta peça pesada"))).toBe(true);
+  });
+
+  it("does not reward pip relief when the heavy piece is the only heavy piece left", () => {
+    const state = makeState({
+      players: [
+        makePlayer({
+          id: 0,
+          role: "user",
+          hand: [
+            { id: "5-6", a: 5, b: 6 },
+            { id: "1-2", a: 1, b: 2 },
+          ],
+        }),
+      ],
+    });
+    const move = rankMoves(state).find((m) => m.piece.id === "5-6")!;
+    expect(move.reasoning.some((r) => r.includes("Descarta peça pesada"))).toBe(false);
+  });
+
+  it("breaks score ties by preferring the higher pip-sum piece", () => {
+    const state = makeState({
+      players: [
+        makePlayer({
+          id: 0,
+          role: "user",
+          hand: [
+            { id: "1-2", a: 1, b: 2 },
+            { id: "4-5", a: 4, b: 5 },
+          ],
+        }),
+      ],
+    });
+    const moves = rankMoves(state);
+    expect(moves).toHaveLength(2);
+    expect(moves[0].score).toBe(moves[1].score);
+    expect(moves[0].piece.id).toBe("4-5");
+  });
 });
