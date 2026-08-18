@@ -2,10 +2,8 @@ import { describe, expect, it } from "vitest";
 import { createDeck } from "./deck";
 import {
   applySuitPlayed,
-  computeRoundScore,
-  estimateSuitLikelihood,
+  filterByPlayableEnds,
   getCandidatePieces,
-  getScoreKey,
   getUnknownPieces,
   registerPass,
   willSurelyPass,
@@ -45,13 +43,12 @@ function makeState(overrides: Partial<GameState>): GameState {
     boneyardRemaining: 0,
     currentPlayerIndex: 0,
     history: [],
-    scores: {},
     roundNumber: 1,
     error: null,
     roundEndReason: null,
     passStreak: 0,
     lastWinnerId: null,
-    roundEndBonus: null,
+    batidaType: null,
     ...overrides,
   };
 }
@@ -119,82 +116,32 @@ describe("getUnknownPieces", () => {
   });
 });
 
-describe("estimateSuitLikelihood", () => {
-  it("returns 0 for a player known void in that suit", () => {
-    const state = makeState({
-      players: [makePlayer({ id: 1, role: "opponent", voidSuits: [4], handSize: 5 })],
-    });
-    const likelihood = estimateSuitLikelihood(state, 1, 4, createDeck());
-    expect(likelihood).toBe(0);
+describe("filterByPlayableEnds", () => {
+  it("returns the whole pool on an empty board", () => {
+    const pool = [{ id: "0-0", a: 0, b: 0 } as const, { id: "1-2", a: 1, b: 2 } as const];
+    expect(filterByPlayableEnds(pool, null, null, [])).toEqual(pool);
   });
 
-  it("returns a proportional share among eligible players", () => {
-    const state = makeState({
-      players: [
-        makePlayer({ id: 1, role: "opponent", handSize: 5, voidSuits: [] }),
-        makePlayer({ id: 2, role: "opponent", handSize: 5, voidSuits: [] }),
-      ],
-    });
-    const unknown = createDeck().filter((p) => p.a === 4 || p.b === 4);
-    const likelihood = estimateSuitLikelihood(state, 1, 4, unknown);
-    expect(likelihood).toBeCloseTo(0.5);
-  });
-});
-
-describe("getScoreKey", () => {
-  it("uses the team letter in duplas mode", () => {
-    const state = makeState({ config: { ...makeState({}).config, mode: "duplas" } });
-    const key = getScoreKey(state, makePlayer({ id: 2, team: "A" }));
-    expect(key).toBe("A");
+  it("keeps only pieces matching an open, non-void end", () => {
+    const pool = createDeck();
+    const result = filterByPlayableEnds(pool, 3, 5, []);
+    expect(result.every((p) => p.a === 3 || p.b === 3 || p.a === 5 || p.b === 5)).toBe(true);
+    expect(result.some((p) => p.id === "1-2")).toBe(false);
   });
 
-  it("uses the player id in individual mode", () => {
-    const state = makeState({});
-    const key = getScoreKey(state, makePlayer({ id: 2, team: null }));
-    expect(key).toBe("2");
-  });
-});
-
-describe("computeRoundScore", () => {
-  it("sums known and revealed opponent hands for an individual-mode win", () => {
-    const state = makeState({
-      players: [
-        makePlayer({ id: 0, role: "user", hand: [] }),
-        makePlayer({ id: 1, role: "opponent", hand: [{ id: "6-6", a: 6, b: 6 }], handSize: 1 }),
-        makePlayer({ id: 2, role: "opponent", hand: [{ id: "0-1", a: 0, b: 1 }], handSize: 1 }),
-      ],
-    });
-    const result = computeRoundScore(state, 0, createDeck());
-    expect(result.winnerKey).toBe("0");
-    expect(result.points).toBe(13);
-    expect(result.estimated).toBe(false);
+  it("excludes ends whose value is in voidSuits", () => {
+    const pool = createDeck();
+    const result = filterByPlayableEnds(pool, 3, 5, [3]);
+    expect(result.every((p) => p.a === 5 || p.b === 5)).toBe(true);
+    // "3-1" only matches the voided end (3), so it must be excluded.
+    expect(result.some((p) => p.id === "1-3")).toBe(false);
+    // "3-5" still qualifies via the non-void end (5).
+    expect(result.some((p) => p.id === "3-5")).toBe(true);
   });
 
-  it("estimates points for players whose hand was never revealed", () => {
-    const state = makeState({
-      players: [
-        makePlayer({ id: 0, role: "user", hand: [] }),
-        makePlayer({ id: 1, role: "opponent", hand: null, handSize: 2 }),
-      ],
-    });
-    const result = computeRoundScore(state, 0, createDeck());
-    expect(result.estimated).toBe(true);
-    expect(result.points).toBeGreaterThan(0);
-  });
-
-  it("excludes the winner's teammate from the point count in duplas mode", () => {
-    const state = makeState({
-      config: { ...makeState({}).config, mode: "duplas" },
-      players: [
-        makePlayer({ id: 0, role: "user", team: "A", hand: [] }),
-        makePlayer({ id: 1, role: "opponent", team: "B", hand: [{ id: "6-6", a: 6, b: 6 }], handSize: 1 }),
-        makePlayer({ id: 2, role: "partner", team: "A", hand: [{ id: "5-5", a: 5, b: 5 }], handSize: 1 }),
-        makePlayer({ id: 3, role: "opponent", team: "B", hand: [{ id: "0-1", a: 0, b: 1 }], handSize: 1 }),
-      ],
-    });
-    const result = computeRoundScore(state, 0, createDeck());
-    expect(result.winnerKey).toBe("A");
-    expect(result.points).toBe(13); // 6-6 + 0-1, partner's 5-5 excluded
+  it("returns an empty array when both open ends are void", () => {
+    const pool = createDeck();
+    expect(filterByPlayableEnds(pool, 3, 5, [3, 5])).toEqual([]);
   });
 });
 

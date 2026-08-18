@@ -67,8 +67,9 @@ export interface DrawMove {
 
 export type Move = PlayMove | PassMove | DrawMove;
 
-export type GamePhase = "setup" | "playing" | "round-end" | "finished";
+export type GamePhase = "setup" | "playing" | "round-end";
 export type RoundEndReason = "batida" | "lock" | null;
+export type BatidaType = "simples" | "carroca" | "la-e-lo" | "cruzada";
 
 export interface GameState {
   phase: GamePhase;
@@ -78,11 +79,10 @@ export interface GameState {
   boneyardRemaining: number;
   currentPlayerIndex: number;
   history: Move[];
-  scores: Record<string, number>;
   roundNumber: number;
   error: string | null;
   roundEndReason: RoundEndReason;
   passStreak: number;
   lastWinnerId: number | null;
-  roundEndBonus: { laELo: boolean; bucha: boolean } | null;
+  batidaType: BatidaType | null;
 }

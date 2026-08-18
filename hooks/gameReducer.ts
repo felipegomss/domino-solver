@@ -1,15 +1,41 @@
 import { createDeck } from "@/engine/deck";
-import { applySuitPlayed, computeRoundScore, registerPass } from "@/engine/inference";
-import { End, GameConfig, GameState, Move, Piece, PlayerRole, Suit, Team } from "@/engine/types";
+import { applySuitPlayed, registerPass } from "@/engine/inference";
+import { BatidaType, End, GameConfig, GameState, Move, Piece, PlayerRole, Suit, Team } from "@/engine/types";
 
 export type GameAction =
   | { type: "SETUP_COMPLETE"; config: GameConfig; userHand: Piece[] }
   | { type: "PLAY_PIECE"; playerId: number; pieceId: string; end: End }
   | { type: "PASS"; playerId: number }
   | { type: "DRAW"; playerId: number; pieceId?: string }
-  | { type: "REVEAL_HANDS"; hands: Record<number, Piece[]> }
-  | { type: "FINISH_ROUND"; winnerPlayerId: number }
   | { type: "NEW_ROUND"; userHand: Piece[] };
+
+/**
+ * Classifies the batida (winning play) type from the board ends BEFORE the
+ * winning piece was placed and the piece itself.
+ *
+ * - Empty board: a double is "carroca", anything else "simples".
+ * - Equal ends (L === R): the double of L is "cruzada" (the strongest
+ *   batida — playing the double whose value already occupies both ends).
+ *   Any other double is unreachable here (it couldn't legally be played on
+ *   an end whose value differs from its own). Otherwise: double -> "carroca",
+ *   non-double -> "simples".
+ * - Different ends (L !== R): the piece bridging both ends (L-R) is
+ *   "la-e-lo". A double is "carroca". Otherwise "simples".
+ */
+function classifyBatida(preLeft: Suit | null, preRight: Suit | null, piece: Piece): BatidaType {
+  if (preLeft === null && preRight === null) {
+    return piece.a === piece.b ? "carroca" : "simples";
+  }
+  const left = preLeft as Suit;
+  const right = preRight as Suit;
+  if (left === right) {
+    if (piece.a === piece.b && piece.a === left) return "cruzada";
+    return piece.a === piece.b ? "carroca" : "simples";
+  }
+  const bridges = (piece.a === left && piece.b === right) || (piece.a === right && piece.b === left);
+  if (bridges) return "la-e-lo";
+  return piece.a === piece.b ? "carroca" : "simples";
+}
 
 const EMPTY_SUIT_COUNT: Record<Suit, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
 
@@ -29,13 +55,12 @@ export function createInitialState(): GameState {
     boneyardRemaining: 0,
     currentPlayerIndex: 0,
     history: [],
-    scores: {},
     roundNumber: 1,
     error: null,
     roundEndReason: null,
     passStreak: 0,
     lastWinnerId: null,
-    roundEndBonus: null,
+    batidaType: null,
   };
 }
 
@@ -153,17 +178,7 @@ function handlePlayPiece(state: GameState, action: Extract<GameAction, { type: "
   const move: Move = { type: "play", playerId: action.playerId, pieceId: piece.id, end: action.end };
   const battedOut = mover.handSize === 0;
 
-  let roundEndBonus: GameState["roundEndBonus"] = null;
-  if (battedOut) {
-    const laELo = !boardEmpty && board.leftEnd === board.rightEnd;
-    const rivals = state.players.filter(
-      (p) => p.id !== action.playerId && (state.config.mode !== "duplas" || p.team !== mover.team)
-    );
-    const bucha =
-      rivals.length > 0 &&
-      rivals.every((r) => !state.history.some((m) => m.type === "play" && m.playerId === r.id));
-    roundEndBonus = { laELo, bucha };
-  }
+  const batidaType = battedOut ? classifyBatida(board.leftEnd, board.rightEnd, piece) : null;
 
   return {
     ...state,
@@ -174,7 +189,8 @@ function handlePlayPiece(state: GameState, action: Extract<GameAction, { type: "
     passStreak: 0,
     phase: battedOut ? "round-end" : "playing",
     roundEndReason: battedOut ? "batida" : null,
-    roundEndBonus,
+    batidaType,
+    lastWinnerId: battedOut ? mover.id : state.lastWinnerId,
     currentPlayerIndex: battedOut ? state.currentPlayerIndex : nextPlayerIndex(state),
   };
 }
@@ -191,6 +207,13 @@ function handlePass(state: GameState, action: Extract<GameAction, { type: "PASS"
   const passStreak = state.passStreak + 1;
   const locked = passStreak >= state.config.numPlayers;
 
+  let lastWinnerId = state.lastWinnerId;
+  if (locked) {
+    const minHandSize = Math.min(...afterPass.players.map((p) => p.handSize));
+    const leaders = afterPass.players.filter((p) => p.handSize === minHandSize);
+    lastWinnerId = leaders.length === 1 ? leaders[0].id : null;
+  }
+
   return {
     ...afterPass,
     error: null,
@@ -198,6 +221,8 @@ function handlePass(state: GameState, action: Extract<GameAction, { type: "PASS"
     passStreak,
     phase: locked ? "round-end" : "playing",
     roundEndReason: locked ? "lock" : null,
+    batidaType: locked ? null : afterPass.batidaType,
+    lastWinnerId,
     currentPlayerIndex: locked ? state.currentPlayerIndex : nextPlayerIndex(state),
   };
 }
@@ -241,29 +266,6 @@ function handleDraw(state: GameState, action: Extract<GameAction, { type: "DRAW"
   };
 }
 
-function handleRevealHands(state: GameState, action: Extract<GameAction, { type: "REVEAL_HANDS" }>): GameState {
-  const allRevealedIds = Object.values(action.hands).flat().map((p) => p.id);
-  if (new Set(allRevealedIds).size !== allRevealedIds.length) {
-    return withError(state, "Uma mesma peça foi atribuída a mais de um jogador.");
-  }
-  const players = state.players.map((p) => {
-    const revealed = action.hands[p.id];
-    if (!revealed) return p;
-    return { ...p, hand: revealed, handSize: revealed.length };
-  });
-  return { ...state, error: null, players };
-}
-
-function handleFinishRound(state: GameState, action: Extract<GameAction, { type: "FINISH_ROUND" }>): GameState {
-  const { winnerKey, points: basePoints } = computeRoundScore(state, action.winnerPlayerId, createDeck());
-  let multiplier = 1;
-  if (state.roundEndBonus?.laELo) multiplier *= 2;
-  if (state.roundEndBonus?.bucha) multiplier *= 2;
-  const points = basePoints * multiplier;
-  const scores = { ...state.scores, [winnerKey]: (state.scores[winnerKey] ?? 0) + points };
-  return { ...state, error: null, phase: "finished", scores, lastWinnerId: action.winnerPlayerId };
-}
-
 function handleNewRound(state: GameState, action: Extract<GameAction, { type: "NEW_ROUND" }>): GameState {
   const startingPlayer = state.lastWinnerId ?? state.config.startingPlayer;
   const dealtTotal = state.config.numPlayers * state.config.handSize;
@@ -279,7 +281,7 @@ function handleNewRound(state: GameState, action: Extract<GameAction, { type: "N
     history: [],
     roundNumber: state.roundNumber + 1,
     roundEndReason: null,
-    roundEndBonus: null,
+    batidaType: null,
     passStreak: 0,
   };
 }
@@ -294,10 +296,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       return handlePass(clearError(state), action);
     case "DRAW":
       return handleDraw(clearError(state), action);
-    case "REVEAL_HANDS":
-      return handleRevealHands(clearError(state), action);
-    case "FINISH_ROUND":
-      return handleFinishRound(clearError(state), action);
     case "NEW_ROUND":
       return handleNewRound(clearError(state), action);
     default:
