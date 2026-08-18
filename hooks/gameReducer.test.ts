@@ -97,6 +97,14 @@ describe("PLAY_PIECE", () => {
     expect(next.error).toBe("Não é a vez deste jogador.");
   });
 
+  it("rejects a non-user play of a piece already on the board", () => {
+    const state = playingState();
+    const afterFirst = gameReducer(state, { type: "PLAY_PIECE", playerId: 0, pieceId: "3-3", end: "left" });
+    const rejected = gameReducer(afterFirst, { type: "PLAY_PIECE", playerId: 1, pieceId: "3-3", end: "left" });
+    expect(rejected.error).toBe("Essa peça já está em jogo.");
+    expect(rejected.board).toEqual(afterFirst.board);
+  });
+
   it("marks a batida when the mover's hand reaches zero", () => {
     const oneHand = gameReducer(createInitialState(), {
       type: "SETUP_COMPLETE",

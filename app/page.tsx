@@ -8,6 +8,8 @@ import { RoundEndPanel } from "@/components/RoundEndPanel";
 import { SetupWizard } from "@/components/SetupWizard";
 import { TurnController } from "@/components/TurnController";
 import { UserHand } from "@/components/UserHand";
+import { createDeck } from "@/engine/deck";
+import { getUnknownPieces } from "@/engine/inference";
 import { RankedMove, rankMoves } from "@/engine/solver";
 import { End, Suit } from "@/engine/types";
 import { useDominoGame } from "@/hooks/useDominoGame";
@@ -18,6 +20,11 @@ export default function Home() {
   const user = state.players.find((p) => p.role === "user");
   const recommendations = useMemo(() => (state.phase === "playing" ? rankMoves(state) : []), [state]);
   const isUserTurn = state.players[state.currentPlayerIndex]?.role === "user";
+  const mustDraw = state.config.boneyardEnabled && state.boneyardRemaining > 0;
+  const drawablePieces = useMemo(
+    () => (state.phase === "playing" ? getUnknownPieces(state, createDeck()) : []),
+    [state]
+  );
 
   function handleChooseMove(move: RankedMove) {
     if (!user) return;
@@ -37,10 +44,10 @@ export default function Home() {
     dispatch({ type: "PASS", playerId: current.id });
   }
 
-  function handleDraw() {
+  function handleDraw(pieceId?: string) {
     const current = state.players[state.currentPlayerIndex];
     if (!current) return;
-    dispatch({ type: "DRAW", playerId: current.id });
+    dispatch({ type: "DRAW", playerId: current.id, pieceId });
   }
 
   if (state.phase === "setup") {
@@ -78,14 +85,21 @@ export default function Home() {
         state={state}
         onPlayOpponentPiece={handleOpponentPlay}
         onPass={handlePass}
-        onDraw={handleDraw}
+        onDraw={() => handleDraw()}
         onUndo={undo}
       />
 
       {isUserTurn && user?.hand && (
         <>
           <UserHand hand={user.hand} board={state.board} topRecommendedPieceId={recommendations[0]?.piece.id} />
-          <RecommendationList moves={recommendations} onChoose={handleChooseMove} />
+          <RecommendationList
+            moves={recommendations}
+            onChoose={handleChooseMove}
+            mustDraw={mustDraw}
+            drawablePieces={drawablePieces}
+            onPass={handlePass}
+            onDrawPiece={(pieceId) => handleDraw(pieceId)}
+          />
         </>
       )}
 

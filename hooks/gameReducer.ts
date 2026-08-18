@@ -102,6 +102,14 @@ function handlePlayPiece(state: GameState, action: Extract<GameAction, { type: "
       : createDeck().find((p) => p.id === action.pieceId);
   if (!piece) return withError(state, "Peça inválida.");
 
+  if (player.role !== "user") {
+    const alreadyOnBoard = state.board.sequence.some((s) => s.piece.id === piece.id);
+    const alreadyKnown = state.players.some((p) => p.hand?.some((h) => h.id === piece.id));
+    if (alreadyOnBoard || alreadyKnown) {
+      return withError(state, "Essa peça já está em jogo.");
+    }
+  }
+
   const { board } = state;
   const boardEmpty = board.leftEnd === null && board.rightEnd === null;
 
