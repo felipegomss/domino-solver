@@ -60,15 +60,19 @@ export function getCandidatePieces(state: GameState, playerId: number, deck: Pie
   const player = state.players.find((p) => p.id === playerId);
   if (!player) return [];
 
-  const unknown = getUnknownPieces(state, deck);
+  // Once a hand is known (the user's, or one revealed at round end) the pool of
+  // pieces that player could play is that hand — not the pieces still
+  // unaccounted for, which by definition excludes everything they hold.
+  const pool = player.hand ?? getUnknownPieces(state, deck);
+
   const { leftEnd, rightEnd } = state.board;
-  if (leftEnd === null && rightEnd === null) return unknown;
+  if (leftEnd === null && rightEnd === null) return pool;
 
   const openEnds = Array.from(new Set([leftEnd, rightEnd].filter((v): v is Suit => v !== null)));
   const playableEnds = openEnds.filter((v) => !player.voidSuits.includes(v));
   if (playableEnds.length === 0) return [];
 
-  return unknown.filter((p) => playableEnds.some((v) => p.a === v || p.b === v));
+  return pool.filter((p) => playableEnds.some((v) => p.a === v || p.b === v));
 }
 
 /**

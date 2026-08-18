@@ -278,6 +278,28 @@ describe("getCandidatePieces", () => {
   });
 });
 
+describe("getCandidatePieces with a known hand", () => {
+  it("draws from the player's own hand instead of the unaccounted-for pool", () => {
+    const state = makeState({
+      board: { sequence: [], leftEnd: 3, rightEnd: 5 },
+      players: [
+        makePlayer({
+          id: 0,
+          role: "user",
+          hand: [
+            { id: "3-4", a: 3, b: 4 },
+            { id: "0-1", a: 0, b: 1 },
+          ],
+        }),
+      ],
+    });
+    const candidates = getCandidatePieces(state, 0, createDeck()).map((p) => p.id);
+    // 3-4 fits the open 3; 0-1 fits neither end. Neither may come from the
+    // unknown pool, which excludes everything the user is holding.
+    expect(candidates).toEqual(["3-4"]);
+  });
+});
+
 describe("willSurelyPass", () => {
   it("is true when the player is void in both open ends and the boneyard is empty", () => {
     const state = makeState({
