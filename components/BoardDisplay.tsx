@@ -22,7 +22,7 @@ function EndMarker({ label, value }: { label: string; value: Suit | null }) {
       <span className="flex size-11 items-center justify-center rounded-full border border-gold/50 bg-felt-950/70 font-display text-xl font-semibold tabular-nums text-gold-2 shadow-[inset_0_1px_4px_rgba(0,0,0,0.6)]">
         {value ?? "—"}
       </span>
-      <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-mist/80">{label}</span>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-mist">{label}</span>
     </div>
   );
 }
@@ -38,7 +38,7 @@ export function BoardDisplay({ board }: BoardDisplayProps) {
       <div className="bg-gradient-to-b from-felt-700 via-felt-800 to-felt-900">
         <div className="flex items-center justify-between gap-4 px-5 py-3">
           <EndMarker label="Ponta esquerda" value={board.leftEnd} />
-          <span className="hidden text-[11px] font-semibold uppercase tracking-[0.22em] text-mist/60 sm:block">
+          <span className="hidden text-[11px] font-semibold uppercase tracking-[0.22em] text-mist sm:block">
             {isEmpty ? "Mesa vazia" : `${board.sequence.length} peça(s) na mesa`}
           </span>
           <div className="flex flex-row-reverse">
@@ -47,7 +47,7 @@ export function BoardDisplay({ board }: BoardDisplayProps) {
         </div>
 
         {isEmpty ? (
-          <p className="flex min-h-36 items-center justify-center px-4 pb-6 text-center font-display text-lg italic text-mist/70">
+          <p className="flex min-h-36 items-center justify-center px-4 pb-6 text-center font-display text-lg italic text-mist">
             Aguardando a primeira jogada…
           </p>
         ) : (
