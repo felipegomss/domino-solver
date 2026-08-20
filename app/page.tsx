@@ -100,9 +100,9 @@ export default function Home() {
 
   if (state.phase === "round-end") {
     return (
-      <main className="mx-auto w-full max-w-[1200px] space-y-6 px-5 py-6 xl:px-8">
-        {header}
-        <div className="panel-in [animation-delay:80ms]">
+      <main className="mx-auto flex h-dvh w-full max-w-[1200px] flex-col gap-4 overflow-hidden px-5 py-4 xl:px-8">
+        <div className="shrink-0">{header}</div>
+        <div className="panel-in shrink-0 [animation-delay:80ms]">
           <BoardDisplay board={state.board} />
         </div>
         <RoundEndPanel
@@ -115,15 +115,17 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-[1680px] space-y-6 px-5 py-6 xl:px-10">
-      {header}
+    // Fixed-height shell: the table and the current action never scroll out of
+    // view — only the columns beside them scroll, and only when they overflow.
+    <main className="mx-auto flex h-dvh w-full max-w-[1680px] flex-col gap-4 overflow-hidden px-5 py-4 xl:px-10">
+      <div className="shrink-0">{header}</div>
 
-      <div className="panel-in [animation-delay:80ms]">
+      <div className="panel-in shrink-0 [animation-delay:80ms]">
         <BoardDisplay board={state.board} />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-12">
-        <div className="panel-in space-y-6 [animation-delay:160ms] xl:col-span-7">
+      <div className="grid min-h-0 flex-1 gap-6 xl:grid-cols-12">
+        <div className="panel-in scroll-slim min-h-0 space-y-5 overflow-y-auto pr-1 [animation-delay:160ms] xl:col-span-7">
           <TurnController
             state={state}
             candidates={candidates}
@@ -146,23 +148,31 @@ export default function Home() {
           )}
         </div>
 
-        <div className="panel-in space-y-6 self-start [animation-delay:240ms] xl:sticky xl:top-6 xl:col-span-5">
-          <section className="rounded-2xl border border-line bg-surface p-5 shadow-[0_6px_24px_rgba(0,0,0,0.35)]">
-            <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-mist">Mesa</h2>
-            <SeatMap state={state} currentPlayerIndex={state.currentPlayerIndex} />
+        <div className="panel-in flex min-h-0 flex-col gap-5 [animation-delay:240ms] xl:col-span-5">
+          <section className="shrink-0 rounded-2xl border border-line bg-surface p-4 shadow-[0_6px_24px_rgba(0,0,0,0.35)]">
+            <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-mist">Mesa</h2>
+            <SeatMap
+              seats={state.players}
+              direction={state.config.direction}
+              mode={state.config.mode}
+              currentPlayerIndex={state.currentPlayerIndex}
+              compact
+            />
           </section>
 
           {user?.hand && (
-            <UserHand
-              hand={user.hand}
-              board={state.board}
-              topRecommendedPieceId={recommendations[0]?.piece.id}
-              isUserTurn={isUserTurn}
-            />
+            <div className="shrink-0">
+              <UserHand
+                hand={user.hand}
+                board={state.board}
+                topRecommendedPieceId={recommendations[0]?.piece.id}
+                isUserTurn={isUserTurn}
+              />
+            </div>
           )}
 
-          <section className="rounded-2xl border border-line bg-surface p-5 shadow-[0_6px_24px_rgba(0,0,0,0.35)]">
-            <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-mist">Histórico</h2>
+          <section className="flex min-h-0 flex-1 flex-col rounded-2xl border border-line bg-surface p-4 shadow-[0_6px_24px_rgba(0,0,0,0.35)]">
+            <h2 className="mb-2 shrink-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-mist">Histórico</h2>
             <GameHistoryLog state={state} />
           </section>
         </div>

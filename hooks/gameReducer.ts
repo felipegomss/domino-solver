@@ -1,6 +1,7 @@
 import { createDeck } from "@/engine/deck";
 import { applySuitPlayed, registerPass } from "@/engine/inference";
-import { BatidaType, End, GameConfig, GameState, Move, Piece, PlayerRole, Suit, Team } from "@/engine/types";
+import { assignSeats } from "@/engine/seats";
+import { BatidaType, End, GameConfig, GameState, Move, Piece, Suit } from "@/engine/types";
 
 export type GameAction =
   | { type: "SETUP_COMPLETE"; config: GameConfig; userHand: Piece[] }
@@ -65,25 +66,13 @@ export function createInitialState(): GameState {
 }
 
 function buildPlayers(config: GameConfig, userHand: Piece[]) {
-  const players = [];
-  for (let id = 0; id < config.numPlayers; id++) {
-    let role: PlayerRole = id === 0 ? "user" : "opponent";
-    let team: Team | null = null;
-    if (config.mode === "duplas" && config.numPlayers === 4) {
-      team = id % 2 === 0 ? "A" : "B";
-      if (id === 2) role = "partner";
-    }
-    players.push({
-      id,
-      role,
-      team,
-      hand: id === 0 ? [...userHand] : null,
-      handSize: id === 0 ? userHand.length : config.handSize,
-      voidSuits: [] as Suit[],
-      suitPlayCount: { ...EMPTY_SUIT_COUNT },
-    });
-  }
-  return players;
+  return assignSeats(config).map((seat) => ({
+    ...seat,
+    hand: seat.role === "user" ? [...userHand] : null,
+    handSize: seat.role === "user" ? userHand.length : config.handSize,
+    voidSuits: [] as Suit[],
+    suitPlayCount: { ...EMPTY_SUIT_COUNT },
+  }));
 }
 
 function withError(state: GameState, error: string): GameState {

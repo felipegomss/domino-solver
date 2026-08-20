@@ -54,14 +54,14 @@ export function RoundEndPanel({ state, onNewRound, onUndo }: RoundEndPanelProps)
   }
 
   return (
-    <div className="panel-in space-y-6 rounded-2xl border border-line bg-surface p-6 shadow-[0_16px_60px_rgba(0,0,0,0.5)] sm:p-8">
+    <div className="panel-in flex min-h-0 flex-1 flex-col gap-4 rounded-2xl border border-line bg-surface p-5 shadow-[0_16px_60px_rgba(0,0,0,0.5)] sm:p-6">
       {state.error && (
         <p role="alert" className="rounded-lg border border-danger/50 bg-danger-dim px-3 py-2 text-sm text-danger">
           {state.error}
         </p>
       )}
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex shrink-0 flex-wrap items-start justify-between gap-4">
         <div className="space-y-2">
           <h2 className="flex items-center gap-3 font-display text-3xl font-semibold text-ivory">
             {userSideWon && <Trophy size={28} className="text-gold" aria-hidden="true" />}
@@ -98,9 +98,9 @@ export function RoundEndPanel({ state, onNewRound, onUndo }: RoundEndPanelProps)
         </button>
       </div>
 
-      <hr className="border-line/60" />
+      <hr className="shrink-0 border-line/60" />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="scroll-slim grid min-h-0 flex-1 gap-6 overflow-y-auto pr-1 lg:grid-cols-2">
         <HandPicker
           label={`Nova rodada ${state.roundNumber + 1} — selecione sua mão`}
           selected={newHand}
@@ -115,15 +115,23 @@ export function RoundEndPanel({ state, onNewRound, onUndo }: RoundEndPanelProps)
               ? `${playerLabel(state, winner.id)} venceu, mas a mesa decide quem sai — confirme ou escolha outro.`
               : "Rodada empatada — escolha quem sai."}
           </p>
-          <SeatMap state={state} selectable selectedId={starterId} onSelect={setStarterId} />
+          <SeatMap
+            seats={state.players}
+            direction={state.config.direction}
+            mode={state.config.mode}
+            selectable
+            selectedId={starterId}
+            onSelect={setStarterId}
+          />
         </div>
       </div>
 
       <button
         type="button"
         disabled={newHand.length !== state.config.handSize || starterId === null}
+        data-pinned-action
         onClick={() => starterId !== null && onNewRound(newHand, starterId)}
-        className="min-h-11 rounded-lg bg-gold px-6 py-2 font-semibold text-gold-ink transition-colors hover:bg-gold-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:pointer-events-none disabled:opacity-40"
+        className="min-h-11 shrink-0 self-start rounded-lg bg-gold px-6 py-2 font-semibold text-gold-ink transition-colors hover:bg-gold-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:pointer-events-none disabled:opacity-40"
       >
         Iniciar nova rodada
       </button>

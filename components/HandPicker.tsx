@@ -21,7 +21,7 @@ interface HandPickerProps {
  */
 export function HandPicker({ label, selected, max, onToggle }: HandPickerProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="font-display text-xl font-semibold text-ivory">{label}</h2>
         <span
@@ -34,23 +34,30 @@ export function HandPicker({ label, selected, max, onToggle }: HandPickerProps) 
       </div>
 
       {selected.length > 0 && (
-        <div className="rounded-xl border border-gold/30 bg-gold/5 p-3">
+        <div className="rounded-xl border border-gold/30 bg-gold/5 p-2.5">
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-2">Sua mão</p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {selected.map((piece) => (
-              <DominoTile key={piece.id} piece={piece} size="sm" selected onClick={() => onToggle(piece)} />
+              <DominoTile
+                key={piece.id}
+                piece={piece}
+                size="sm"
+                orientation="horizontal"
+                selected
+                onClick={() => onToggle(piece)}
+              />
             ))}
           </div>
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {SUIT_GROUPS.map((suit) => (
           <div key={suit} className="flex items-center gap-3">
             <span className="w-4 shrink-0 text-right font-display text-sm font-semibold tabular-nums text-faint">
               {suit}
             </span>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {DECK.filter((piece) => piece.a === suit).map((piece) => {
                 const isSelected = selected.some((p) => p.id === piece.id);
                 return (
@@ -58,6 +65,7 @@ export function HandPicker({ label, selected, max, onToggle }: HandPickerProps) 
                     key={piece.id}
                     piece={piece}
                     size="sm"
+                    orientation="horizontal"
                     selected={isSelected}
                     disabled={!isSelected && selected.length >= max}
                     onClick={() => onToggle(piece)}

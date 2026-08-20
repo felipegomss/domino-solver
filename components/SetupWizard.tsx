@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { assignSeats } from "@/engine/seats";
 import { GameConfig, Piece } from "@/engine/types";
 import { HandPicker } from "./HandPicker";
+import { SeatMap } from "./SeatMap";
 
 interface SetupWizardProps {
   onComplete: (config: GameConfig, userHand: Piece[]) => void;
@@ -72,12 +74,8 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
   ];
   const stepIndex = visibleSteps.indexOf(step);
 
-  const starterOptions: { id: number; label: string }[] = [{ id: 0, label: "Você" }];
-  if (mode === "duplas" && numPlayers === 4) starterOptions.push({ id: 2, label: "Parceiro" });
-  for (let i = 1; i < numPlayers; i++) {
-    if (mode === "duplas" && numPlayers === 4 && i === 2) continue;
-    starterOptions.push({ id: i, label: `Adversário ${i}` });
-  }
+  // Same assignment the reducer will use, so the preview table matches the deal.
+  const seats = assignSeats({ numPlayers, mode: numPlayers === 4 ? mode : "individual" });
 
   function togglePiece(piece: Piece) {
     setSelectedHand((prev) => {
@@ -121,9 +119,9 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
   }
 
   return (
-    <main className="flex min-h-dvh items-start justify-center px-4 py-10 sm:items-center">
-      <div className="panel-in w-full max-w-2xl space-y-6 rounded-2xl border border-line bg-surface p-6 shadow-[0_16px_60px_rgba(0,0,0,0.5)] sm:p-8">
-        <header className="space-y-2">
+    <main className="flex h-dvh items-center justify-center overflow-hidden px-4 py-6">
+      <div className="panel-in flex max-h-full w-full max-w-3xl flex-col gap-5 rounded-2xl border border-line bg-surface p-6 shadow-[0_16px_60px_rgba(0,0,0,0.5)] sm:p-7">
+        <header className="shrink-0 space-y-2">
           <p className="font-display text-sm italic text-gold">Dominó — assistente de mesa</p>
           <h1 className="font-display text-3xl font-semibold text-ivory">Configurar partida</h1>
           <div className="flex items-center gap-1.5 pt-1" aria-label={`Etapa ${stepIndex + 1} de ${visibleSteps.length}`}>
@@ -139,6 +137,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
           </div>
         </header>
 
+        <div className="scroll-slim min-h-0 flex-1 overflow-y-auto pr-1">
         {step === "players" && (
           <section className="space-y-4">
             <h2 className="text-lg font-semibold text-ivory">{STEP_TITLES.players}</h2>
@@ -261,15 +260,17 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
         )}
 
         {step === "starter" && (
-          <section className="space-y-4">
+          <section className="space-y-3">
             <h2 className="text-lg font-semibold text-ivory">{STEP_TITLES.starter}</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {starterOptions.map((opt) => (
-                <StepButton key={opt.id} active={startingPlayer === opt.id} onClick={() => setStartingPlayer(opt.id)}>
-                  {opt.label}
-                </StepButton>
-              ))}
-            </div>
+            <p className="text-sm text-faint">Toque no lugar de quem começa jogando.</p>
+            <SeatMap
+              seats={seats.map((seat) => ({ ...seat, handSize }))}
+              direction={direction}
+              mode={numPlayers === 4 ? mode : "individual"}
+              selectable
+              selectedId={startingPlayer}
+              onSelect={setStartingPlayer}
+            />
           </section>
         )}
 
@@ -279,7 +280,9 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
           </section>
         )}
 
-        <div className="flex justify-between pt-2">
+        </div>
+
+        <div className="flex shrink-0 justify-between border-t border-line/60 pt-4">
           <button
             type="button"
             onClick={goBack}

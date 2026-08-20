@@ -25,7 +25,7 @@ export function GameHistoryLog({ state }: GameHistoryLogProps) {
   }
 
   return (
-    <ol className="scroll-slim max-h-72 space-y-0.5 overflow-y-auto pr-1 text-sm">
+    <ol className="scroll-slim min-h-0 flex-1 space-y-0.5 overflow-y-auto pr-1 text-sm">
       {[...state.history].reverse().map((move, i) => {
         const originalIndex = state.history.length - 1 - i;
         const { label, action, isUser } = describeMove(move, state);
