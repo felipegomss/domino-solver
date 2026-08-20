@@ -19,6 +19,8 @@ interface SeatMapProps {
   selectable?: boolean;
   selectedId?: number | null;
   onSelect?: (playerId: number) => void;
+  /** When given, the centre becomes a toggle for the direction of play. */
+  onToggleDirection?: () => void;
   compact?: boolean;
 }
 
@@ -61,6 +63,7 @@ export function SeatMap({
   selectable = false,
   selectedId,
   onSelect,
+  onToggleDirection,
   compact = false,
 }: SeatMapProps) {
   const slots = slotsFor(seats.length, direction);
@@ -129,12 +132,26 @@ export function SeatMap({
         );
       })}
 
-      <div className="col-start-2 row-start-2 flex flex-col items-center justify-center gap-1 text-faint">
-        <DirectionIcon size={compact ? 18 : 22} aria-hidden="true" />
-        <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">
-          {direction === "cw" ? "Horário" : "Anti-horário"}
-        </span>
-      </div>
+      {onToggleDirection ? (
+        <button
+          type="button"
+          onClick={onToggleDirection}
+          aria-label={`Sentido ${direction === "cw" ? "horário" : "anti-horário"} — tocar para inverter`}
+          className="col-start-2 row-start-2 flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg border border-line px-2 py-1 text-faint transition-colors hover:border-gold/60 hover:text-gold-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+        >
+          <DirectionIcon size={compact ? 18 : 22} aria-hidden="true" />
+          <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">
+            {direction === "cw" ? "Horário" : "Anti-horário"}
+          </span>
+        </button>
+      ) : (
+        <div className="col-start-2 row-start-2 flex flex-col items-center justify-center gap-1 text-faint">
+          <DirectionIcon size={compact ? 18 : 22} aria-hidden="true" />
+          <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">
+            {direction === "cw" ? "Horário" : "Anti-horário"}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
