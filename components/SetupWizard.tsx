@@ -215,7 +215,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-ivory">{STEP_TITLES.starter}</h2>
             <p className="text-sm text-faint">
-              Toque no lugar de quem começa jogando. No centro você ajusta o sentido{numPlayers === 4 ? " e o modo" : ""} da mesa.
+              Toque no lugar de quem começa jogando. Na mesa, ajuste o sentido e o modo.
             </p>
             <SeatMap
               seats={seats.map((seat) => ({ ...seat, handSize }))}
@@ -224,10 +224,8 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
               selectable
               selectedId={startingPlayer}
               onSelect={setStartingPlayer}
-              onToggleDirection={() => setDirection((d) => (d === "cw" ? "ccw" : "cw"))}
-              onToggleMode={
-                numPlayers === 4 ? () => setMode((m) => (m === "duplas" ? "individual" : "duplas")) : undefined
-              }
+              onSetDirection={setDirection}
+              onSetMode={setMode}
             />
           </section>
         )}
