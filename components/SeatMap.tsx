@@ -21,6 +21,8 @@ interface SeatMapProps {
   onSelect?: (playerId: number) => void;
   /** When given, the centre becomes a toggle for the direction of play. */
   onToggleDirection?: () => void;
+  /** When given, the centre also toggles duplas vs individual (4 seats only). */
+  onToggleMode?: () => void;
   compact?: boolean;
 }
 
@@ -64,6 +66,7 @@ export function SeatMap({
   selectedId,
   onSelect,
   onToggleDirection,
+  onToggleMode,
   compact = false,
 }: SeatMapProps) {
   const slots = slotsFor(seats.length, direction);
@@ -132,26 +135,43 @@ export function SeatMap({
         );
       })}
 
-      {onToggleDirection ? (
-        <button
-          type="button"
-          onClick={onToggleDirection}
-          aria-label={`Sentido ${direction === "cw" ? "horário" : "anti-horário"} — tocar para inverter`}
-          className="col-start-2 row-start-2 flex min-h-11 flex-col items-center justify-center gap-1 rounded-lg border border-line px-2 py-1 text-faint transition-colors hover:border-gold/60 hover:text-gold-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-        >
-          <DirectionIcon size={compact ? 18 : 22} aria-hidden="true" />
-          <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">
-            {direction === "cw" ? "Horário" : "Anti-horário"}
-          </span>
-        </button>
-      ) : (
-        <div className="col-start-2 row-start-2 flex flex-col items-center justify-center gap-1 text-faint">
-          <DirectionIcon size={compact ? 18 : 22} aria-hidden="true" />
-          <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">
-            {direction === "cw" ? "Horário" : "Anti-horário"}
-          </span>
-        </div>
-      )}
+      <div className="col-start-2 row-start-2 flex flex-col items-center justify-center gap-1.5">
+        {onToggleDirection ? (
+          <button
+            type="button"
+            onClick={onToggleDirection}
+            aria-label={`Sentido ${direction === "cw" ? "horário" : "anti-horário"} — tocar para inverter`}
+            className="flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-lg border border-line px-2 py-1 text-faint transition-colors hover:border-gold/60 hover:text-gold-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+          >
+            <DirectionIcon size={compact ? 18 : 22} aria-hidden="true" />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">
+              {direction === "cw" ? "Horário" : "Anti-horário"}
+            </span>
+          </button>
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-0.5 text-faint">
+            <DirectionIcon size={compact ? 18 : 22} aria-hidden="true" />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em]">
+              {direction === "cw" ? "Horário" : "Anti-horário"}
+            </span>
+          </div>
+        )}
+
+        {onToggleMode && seats.length === 4 && (
+          <button
+            type="button"
+            onClick={onToggleMode}
+            aria-label={`Modo ${isDuplas ? "duplas" : "individual"} — tocar para alternar`}
+            className={`min-h-11 rounded-lg border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold ${
+              isDuplas
+                ? "border-gold/60 bg-gold/10 text-gold-2"
+                : "border-line text-faint hover:border-gold/60 hover:text-gold-2"
+            }`}
+          >
+            {isDuplas ? "Duplas" : "Individual"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

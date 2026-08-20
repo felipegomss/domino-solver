@@ -10,11 +10,10 @@ interface SetupWizardProps {
   onComplete: (config: GameConfig, userHand: Piece[]) => void;
 }
 
-type Step = "players" | "mode" | "handSize" | "boneyard" | "starter" | "hand";
+type Step = "players" | "handSize" | "boneyard" | "starter" | "hand";
 
 const STEP_TITLES: Record<Step, string> = {
   players: "Quantos jogadores?",
-  mode: "Modo de jogo",
   handSize: "Pedras iniciais por jogador",
   boneyard: "Regra do monte",
   hand: "Selecione sua mão",
@@ -64,7 +63,6 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
   const visibleSteps: Step[] = [
     "players",
-    ...(numPlayers === 4 ? (["mode"] as Step[]) : []),
     "handSize",
     ...(hasBoneyard ? (["boneyard"] as Step[]) : []),
     "hand",
@@ -85,8 +83,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
   }
 
   function goNext() {
-    if (step === "players") setStep(numPlayers === 4 ? "mode" : "handSize");
-    else if (step === "mode") setStep("handSize");
+    if (step === "players") setStep("handSize");
     else if (step === "handSize") setStep(hasBoneyard ? "boneyard" : "hand");
     else if (step === "boneyard") setStep("hand");
     else if (step === "hand") setStep("starter");
@@ -96,8 +93,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
     if (step === "starter") setStep("hand");
     else if (step === "hand") setStep(hasBoneyard ? "boneyard" : "handSize");
     else if (step === "boneyard") setStep("handSize");
-    else if (step === "handSize") setStep(numPlayers === 4 ? "mode" : "players");
-    else if (step === "mode") setStep("players");
+    else if (step === "handSize") setStep("players");
   }
 
   function handleSubmit() {
@@ -154,32 +150,6 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                   <span className="block text-center font-display text-2xl">{n}</span>
                 </StepButton>
               ))}
-            </div>
-          </section>
-        )}
-
-        {step === "mode" && (
-          <section className="space-y-4">
-            <h2 className="text-lg font-semibold text-ivory">{STEP_TITLES.mode}</h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <StepButton
-                active={mode === "individual"}
-                onClick={() => {
-                  setMode("individual");
-                  setStartingPlayer(0);
-                }}
-              >
-                Individual
-              </StepButton>
-              <StepButton
-                active={mode === "duplas"}
-                onClick={() => {
-                  setMode("duplas");
-                  setStartingPlayer(0);
-                }}
-              >
-                Duplas (0+2 vs 1+3)
-              </StepButton>
             </div>
           </section>
         )}
@@ -245,7 +215,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-ivory">{STEP_TITLES.starter}</h2>
             <p className="text-sm text-faint">
-              Toque no lugar de quem começa jogando. O centro inverte o sentido do jogo.
+              Toque no lugar de quem começa jogando. No centro você ajusta o sentido{numPlayers === 4 ? " e o modo" : ""} da mesa.
             </p>
             <SeatMap
               seats={seats.map((seat) => ({ ...seat, handSize }))}
@@ -255,6 +225,9 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
               selectedId={startingPlayer}
               onSelect={setStartingPlayer}
               onToggleDirection={() => setDirection((d) => (d === "cw" ? "ccw" : "cw"))}
+              onToggleMode={
+                numPlayers === 4 ? () => setMode((m) => (m === "duplas" ? "individual" : "duplas")) : undefined
+              }
             />
           </section>
         )}
