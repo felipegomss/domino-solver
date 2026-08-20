@@ -55,6 +55,9 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
   const [startingPlayer, setStartingPlayer] = useState(0);
   const [selectedHand, setSelectedHand] = useState<Piece[]>([]);
 
+  // A double-6 set has 28 pieces, so the table simply cannot deal more than
+  // floor(28 / numPlayers) to each player.
+  const maxHandSize = Math.floor(28 / numPlayers);
   const dealtTotal = numPlayers * handSize;
   const hasBoneyard = dealtTotal < 28;
 
@@ -145,8 +148,12 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                   key={n}
                   active={numPlayers === n}
                   onClick={() => {
-                    setNumPlayers(n as 2 | 3 | 4);
+                    const next = n as 2 | 3 | 4;
+                    const nextMax = Math.floor(28 / next);
+                    setNumPlayers(next);
                     setStartingPlayer(0);
+                    setHandSize((h) => Math.min(h, nextMax));
+                    setSelectedHand((prev) => prev.slice(0, nextMax));
                   }}
                 >
                   <span className="block text-center font-display text-2xl">{n}</span>
@@ -202,8 +209,16 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
             <div className="flex items-center gap-4">
               <button
                 type="button"
-                onClick={() => setHandSize((h) => Math.max(1, h - 1))}
-                className="min-h-11 min-w-11 rounded-lg border border-line-strong text-xl font-bold text-mist transition-colors hover:bg-surface-2 hover:text-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                onClick={() =>
+                  setHandSize((h) => {
+                    const next = Math.max(1, h - 1);
+                    // Keep an already-picked hand within the new limit.
+                    setSelectedHand((prev) => prev.slice(0, next));
+                    return next;
+                  })
+                }
+                disabled={handSize <= 1}
+                className="min-h-11 min-w-11 rounded-lg border border-line-strong text-xl font-bold text-mist transition-colors hover:bg-surface-2 hover:text-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:pointer-events-none disabled:opacity-40"
                 aria-label="Diminuir"
               >
                 −
@@ -213,8 +228,9 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
               </span>
               <button
                 type="button"
-                onClick={() => setHandSize((h) => Math.min(14, h + 1))}
-                className="min-h-11 min-w-11 rounded-lg border border-line-strong text-xl font-bold text-mist transition-colors hover:bg-surface-2 hover:text-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                onClick={() => setHandSize((h) => Math.min(maxHandSize, h + 1))}
+                disabled={handSize >= maxHandSize}
+                className="min-h-11 min-w-11 rounded-lg border border-line-strong text-xl font-bold text-mist transition-colors hover:bg-surface-2 hover:text-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:pointer-events-none disabled:opacity-40"
                 aria-label="Aumentar"
               >
                 +
@@ -223,6 +239,9 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
             <p className="text-sm text-faint">
               {dealtTotal} de 28 peças distribuídas
               {hasBoneyard ? ` — ${28 - dealtTotal} peças formarão o monte.` : " — todas as peças distribuídas."}
+              {handSize >= maxHandSize && (
+                <span className="block">Máximo de {maxHandSize} para {numPlayers} jogadores.</span>
+              )}
             </p>
           </section>
         )}

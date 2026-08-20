@@ -312,21 +312,51 @@ describe("DRAW", () => {
 });
 
 describe("NEW_ROUND", () => {
-  it("starts the next round with the previous batida winner and resets round state", () => {
+  function battedState() {
     const started = gameReducer(createInitialState(), {
       type: "SETUP_COMPLETE",
       config: duplasConfig,
       userHand: [{ id: "3-3", a: 3, b: 3 }],
     });
-    const batted = gameReducer(started, { type: "PLAY_PIECE", playerId: 0, pieceId: "3-3", end: "left" });
+    return gameReducer(started, { type: "PLAY_PIECE", playerId: 0, pieceId: "3-3", end: "left" });
+  }
+
+  it("resets round state and starts with the caller-supplied player", () => {
+    const batted = battedState();
     expect(batted.phase).toBe("round-end");
     expect(batted.lastWinnerId).toBe(0);
 
-    const newRound = gameReducer(batted, { type: "NEW_ROUND", userHand: [{ id: "1-1", a: 1, b: 1 }] });
+    const newRound = gameReducer(batted, {
+      type: "NEW_ROUND",
+      userHand: [{ id: "1-1", a: 1, b: 1 }],
+      startingPlayer: 0,
+    });
     expect(newRound.phase).toBe("playing");
     expect(newRound.board.sequence).toEqual([]);
     expect(newRound.currentPlayerIndex).toBe(0);
     expect(newRound.roundNumber).toBe(2);
     expect(newRound.batidaType).toBeNull();
+  });
+
+  it("honours a starter other than the winner (partner opens for the winning team)", () => {
+    // Duplas: player 0 batted, but the table's rule may hand the opening to
+    // the partner (seat 2) — or to anyone else the user picks.
+    const newRound = gameReducer(battedState(), {
+      type: "NEW_ROUND",
+      userHand: [{ id: "1-1", a: 1, b: 1 }],
+      startingPlayer: 2,
+    });
+    expect(newRound.currentPlayerIndex).toBe(2);
+    expect(newRound.config.startingPlayer).toBe(2);
+  });
+
+  it("rejects a starting player outside the table", () => {
+    const rejected = gameReducer(battedState(), {
+      type: "NEW_ROUND",
+      userHand: [{ id: "1-1", a: 1, b: 1 }],
+      startingPlayer: 9,
+    });
+    expect(rejected.error).toBe("Jogador inicial inválido.");
+    expect(rejected.phase).toBe("round-end");
   });
 });

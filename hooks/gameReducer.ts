@@ -7,7 +7,7 @@ export type GameAction =
   | { type: "PLAY_PIECE"; playerId: number; pieceId: string; end: End }
   | { type: "PASS"; playerId: number }
   | { type: "DRAW"; playerId: number; pieceId?: string }
-  | { type: "NEW_ROUND"; userHand: Piece[] };
+  | { type: "NEW_ROUND"; userHand: Piece[]; startingPlayer: number };
 
 /**
  * Classifies the batida (winning play) type from the board ends BEFORE the
@@ -267,7 +267,13 @@ function handleDraw(state: GameState, action: Extract<GameAction, { type: "DRAW"
 }
 
 function handleNewRound(state: GameState, action: Extract<GameAction, { type: "NEW_ROUND" }>): GameState {
-  const startingPlayer = state.lastWinnerId ?? state.config.startingPlayer;
+  // Who opens the next round is a table rule, not something the app can infer:
+  // in duplas the partner may open for the winning side, and some variants
+  // rotate regardless of who batted. The caller always states it explicitly.
+  const { startingPlayer } = action;
+  if (!Number.isInteger(startingPlayer) || startingPlayer < 0 || startingPlayer >= state.config.numPlayers) {
+    return withError(state, "Jogador inicial inválido.");
+  }
   const dealtTotal = state.config.numPlayers * state.config.handSize;
   const boneyardRemaining = Math.max(0, 28 - dealtTotal);
   return {
@@ -275,6 +281,7 @@ function handleNewRound(state: GameState, action: Extract<GameAction, { type: "N
     phase: "playing",
     error: null,
     board: { sequence: [], leftEnd: null, rightEnd: null },
+    config: { ...state.config, startingPlayer },
     players: buildPlayers({ ...state.config, startingPlayer }, action.userHand),
     boneyardRemaining,
     currentPlayerIndex: startingPlayer,

@@ -5,6 +5,7 @@ import { BoardDisplay } from "@/components/BoardDisplay";
 import { GameHistoryLog } from "@/components/GameHistoryLog";
 import { RecommendationList } from "@/components/RecommendationList";
 import { RoundEndPanel } from "@/components/RoundEndPanel";
+import { SeatMap } from "@/components/SeatMap";
 import { SetupWizard } from "@/components/SetupWizard";
 import { TurnController } from "@/components/TurnController";
 import { UserHand } from "@/components/UserHand";
@@ -106,7 +107,7 @@ export default function Home() {
         </div>
         <RoundEndPanel
           state={state}
-          onNewRound={(userHand) => dispatch({ type: "NEW_ROUND", userHand })}
+          onNewRound={(userHand, startingPlayer) => dispatch({ type: "NEW_ROUND", userHand, startingPlayer })}
           onUndo={undo}
         />
       </main>
@@ -146,6 +147,11 @@ export default function Home() {
         </div>
 
         <div className="panel-in space-y-6 self-start [animation-delay:240ms] xl:sticky xl:top-6 xl:col-span-5">
+          <section className="rounded-2xl border border-line bg-surface p-5 shadow-[0_6px_24px_rgba(0,0,0,0.35)]">
+            <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-mist">Mesa</h2>
+            <SeatMap state={state} currentPlayerIndex={state.currentPlayerIndex} />
+          </section>
+
           {user?.hand && (
             <UserHand
               hand={user.hand}

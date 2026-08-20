@@ -4,10 +4,11 @@ import { useState } from "react";
 import { Trophy, Undo2 } from "lucide-react";
 import { BatidaType, GameState, Piece } from "@/engine/types";
 import { HandPicker } from "./HandPicker";
+import { SeatMap } from "./SeatMap";
 
 interface RoundEndPanelProps {
   state: GameState;
-  onNewRound: (userHand: Piece[]) => void;
+  onNewRound: (userHand: Piece[], startingPlayer: number) => void;
   onUndo: () => void;
 }
 
@@ -31,6 +32,9 @@ function playerLabel(state: GameState, playerId: number): string {
 // local state here is never explicitly reset.
 export function RoundEndPanel({ state, onNewRound, onUndo }: RoundEndPanelProps) {
   const [newHand, setNewHand] = useState<Piece[]>([]);
+  // The winner is only a suggestion: in duplas the partner often opens for the
+  // winning side, and some tables rotate regardless of who batted.
+  const [starterId, setStarterId] = useState<number | null>(state.lastWinnerId);
 
   const winnerId = state.lastWinnerId;
   const winner = winnerId !== null ? state.players.find((p) => p.id === winnerId) : undefined;
@@ -96,17 +100,29 @@ export function RoundEndPanel({ state, onNewRound, onUndo }: RoundEndPanelProps)
 
       <hr className="border-line/60" />
 
-      <HandPicker
-        label={`Nova rodada ${state.roundNumber + 1} — selecione sua mão`}
-        selected={newHand}
-        max={state.config.handSize}
-        onToggle={togglePiece}
-      />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <HandPicker
+          label={`Nova rodada ${state.roundNumber + 1} — selecione sua mão`}
+          selected={newHand}
+          max={state.config.handSize}
+          onToggle={togglePiece}
+        />
+
+        <div className="space-y-3">
+          <h2 className="font-display text-xl font-semibold text-ivory">Quem começa jogando?</h2>
+          <p className="text-sm text-faint">
+            {winner
+              ? `${playerLabel(state, winner.id)} venceu, mas a mesa decide quem sai — confirme ou escolha outro.`
+              : "Rodada empatada — escolha quem sai."}
+          </p>
+          <SeatMap state={state} selectable selectedId={starterId} onSelect={setStarterId} />
+        </div>
+      </div>
 
       <button
         type="button"
-        disabled={newHand.length !== state.config.handSize}
-        onClick={() => onNewRound(newHand)}
+        disabled={newHand.length !== state.config.handSize || starterId === null}
+        onClick={() => starterId !== null && onNewRound(newHand, starterId)}
         className="min-h-11 rounded-lg bg-gold px-6 py-2 font-semibold text-gold-ink transition-colors hover:bg-gold-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:pointer-events-none disabled:opacity-40"
       >
         Iniciar nova rodada
