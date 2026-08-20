@@ -33,24 +33,6 @@ export function HandPicker({ label, selected, max, onToggle }: HandPickerProps) 
         </span>
       </div>
 
-      {selected.length > 0 && (
-        <div className="rounded-xl border border-gold/30 bg-gold/5 p-2.5">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-2">Sua mão</p>
-          <div className="flex flex-wrap gap-1.5">
-            {selected.map((piece) => (
-              <DominoTile
-                key={piece.id}
-                piece={piece}
-                size="sm"
-                orientation="horizontal"
-                selected
-                onClick={() => onToggle(piece)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="space-y-1.5">
         {SUIT_GROUPS.map((suit) => (
           <div key={suit} className="flex items-center gap-3">
